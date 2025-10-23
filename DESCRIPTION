@@ -1,0 +1,27 @@
+Package: bacchuss
+Type: Package
+Title: But Another Comfortable Chat Utility for Social Scientists
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Rainer", "Freudenthaler",
+      email = "rfreuden@mail.uni-mannheim.de",
+      role = c("aut", "cre")
+    )
+  )
+Description: This package is aimed at social scientists with few programming skills.
+    The goal is to provide simple functions for zero-shot and few-shot text annotation,
+    as well as (in the future) a few functions that aim to translate ideas from manual
+    annotation to automated annotation to allow social scientists to translate existing
+    workflows into this new method.
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Imports: 
+    ollamar (>= 1.2.2),
+    progress (>= 1.2.3),
+    purrr (>= 1.1.0),
+    stringr (>= 1.5.2)
+Depends: 
+    R (>= 3.5)

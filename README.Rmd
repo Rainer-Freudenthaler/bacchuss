@@ -1,0 +1,215 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# But Another Comfortable CHat Utility for Social Scientists (bacchuss)
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+This package is just a few functions I wrote around the ollamar-package to make its use more comfortable. For a project I wanted to apply few-shot learning with chain-of-thought in R. There are a few packages that can do few-shot learning (e.g. rollama, klaus), but none had implemented few-shot with chain-of-thought. Also, I like my functions to have progress bars with an ETA, because I am impatient.
+
+If you want more fine-grained options, have a look at the wide variety of packages out there. This package aims to give you one function for the use cases I looked at (text annotation) and is targeted at users with little experience in coding R and experience in manual annotation. My aim is to make the process as close to manual annotation as possible so you can apply existing knowledge.
+
+The name, as you might have noticed, is a pun on the name of the god of wine. I did whine a lot while writing the code.
+
+## What you get with this package:
+
+-	One utility function for zero-shot, few-shot and few-shot with chain-of-thought 
+-	You can handle context length – if your text file contains an estimate of the context length you will need, you can hand it over per call
+-	API nonresponse handling – if your call fails, it sends another call, wait-time and number of tries adjustable
+- API bearer token handling
+-	Annotation warmup – I found that ollama is not always deterministic even if you set a seed in the first few API calls. I have found hints of why that is on github – it has to do with how the KV cache handles RAM. I found that after a few hundred calls with the same annotation instructions, the annotations become stable. Consequently, I added a parameter to simply run the first few hundred cases twice until annotation becomes stable. Will deprecate once/if ollama fixes the issue. 
+
+## What I plan to do (soon™)
+
+-	A utility function to test for informative cases in your few shot examples – which ones does the llm disagree about?
+-	A utility function to test for informative cases in your sample
+-	Function for context length estimation
+-	Function for consensus coding (multiple runs with the same model)
+-	Manual for weighing scores if you used weighed samples for validation (will probably not be new functions in this package, I will write vignettes that use packages that already have that function)
+-	function for generating categories from the data
+
+
+## Installation
+
+You can install the development version of bacchuss like this:
+
+```{r install, echo=FALSE}
+remotes::install_github("Rainer-Freudenthaler/bacchuss")
+
+library(bacchuss)
+```
+
+## Installing Ollama
+
+To install a local Ollama instance, follow the instructions here:
+
+[Install Ollama]https://ollama.com/download
+
+You can also access local Ollama API's if you know their address. Then you don't need  install it manually. Additionally, I added functionality to address a local LiteLLM instance. If you do so,
+set backend = "litellm".
+
+
+## Sample data
+
+The package contains a few example files to test the function:
+
+```{r sample1, echo=FALSE}
+library(bacchuss)
+
+### A set of files to annotate - with human annotation to compare
+
+example_set
+
+### A set of few-shot examples with explanations and labels
+
+example_fewshot
+
+### example coding instructions with and without the prompt to explain 
+### the annotation decision
+
+example_instructions
+
+example_instructions_expl
+
+### example reminders to append after you sent the coding task
+
+example_reminder
+
+example_reminder_expl
+
+```
+
+
+## Examples
+
+If you want to do zero-shot annotation, you only need your dataframe with texts, annotation instructions and a short reminder what the output categories are. 
+
+Use host and api_key for access to an API over the web/network.
+
+```{r example1, echo=FALSE}
+library(bacchuss)
+
+example_zero <- bacchuss(example_set, input_column = "paragraphs",
+                        instructions = example_instructions,
+                        reminder = example_reminder,
+                        model = "mistral-nemo:12b",
+                        host = NULL,
+                        api_key = NULL)
+
+summary(example_zero)
+```
+
+You can also prompt the model to give a short explanation before choosing the label (that is one way to implement chain of thought prompting). Just set explanations TRUE.
+
+```{r example2, echo=FALSE}
+library(bacchuss)
+
+example_zero_cot <- bacchuss(example_set, input_column = "paragraphs",
+                            instructions = example_instructions_expl,
+                            reminder = example_reminder_expl,
+                            explanations = TRUE,
+                            model = "mistral-nemo:12b",
+                            host = NULL,
+                            api_key = NULL)
+
+summary(example_zero_cot)
+```
+
+For few-shot annotation, you hand over a few examples with corresponding labels. I would suggest not making too many, because they take up context length and slow down annotation. Make a few simple cases and one case per complicated decision rule, and try to have a balanced set (equal numbers of cases for each category).
+
+```{r example3, echo=FALSE}
+library(bacchuss)
+
+example_few <- bacchuss(example_set, input_column = "paragraphs",
+                        instructions = example_instructions,
+                        examples = example_fewshot$input,
+                        codes = example_fewshot$label,
+                        reminder = example_reminder, 
+                        model = "mistral-nemo:12b",
+                        host = NULL,
+                        api_key = NULL)
+
+summary(example_few)
+```
+
+You can combine few-shot annotation with explanations. In my experience, this increases reliability and makes it possible to investigate false labels for systematic errors.
+
+```{r example4, echo=FALSE}
+library(bacchuss)
+
+example_few_cot <- bacchuss(example_set, input_column = "paragraphs",
+                            instructions = example_instructions_expl,
+                            examples = example_fewshot$input,
+                            explanations = example_fewshot$explanation,
+                            codes = example_fewshot$label,
+                            reminder = example_reminder_expl,
+                            model = "mistral-nemo:12b",
+                            host = NULL,
+                            api_key = NULL)
+
+summary(example_few_cot)
+```
+
+## Measure reliability
+
+The example dataset contains human annotation to compare to your llm annotation. Expect a Kappa of between
+.62 and .73 for admiration and between .70 and .76 for fear for example_few_cot. Under the other conditions, reliability will be lower.
+
+```{r example5, echo=FALSE}
+example_zero$fear_human <- example_zero$Emotion == "Angst/Furcht (1)"
+
+example_zero$fear_llm <- example_zero$labels == "Angst/Furcht (1)"
+
+example_zero$adm_human <- example_zero$Emotion == "Bewunderung/tiefer Respekt (2)"
+
+example_zero$adm_llm <- example_zero$labels == "Bewunderung/tiefer Respekt (2)"
+
+mt_fear <- table(example_zero$fear_llm, example_zero$fear_human)
+caret::confusionMatrix(mt_fear, mode = "prec_recall", positive = "TRUE")
+
+mt_admiration <- table(example_zero$adm_llm, example_zero$adm_human)
+caret::confusionMatrix(mt_admiration, mode = "prec_recall", positive = "TRUE")
+
+```
+
+## How to write annotation instructions
+
+Current best practice is to include the following parts in your coding instructions:
+
+- Role: Tell the model what it has to do, and what social role it should immitate. Usually something like: "You are an assistant for the classification of paragraphs according to emotion categories."
+- Context: Give the model relevant information on the texts it will code. For example: "You code news articles", or "You only rely on emotions directly expressed within the text. Do not include context knowledge."
+- Instruction: The coding rules. For example, add a section categories where you explain each category separately. Add definitions, common cases, example keywords. You can add an additional section for decision rules when necessary.
+- Format: End the prompt with a description that tells the model how to output the annotations. Since bacchuss internally relies on the format "Label:" for labels and "Explanation:" for explanations, tell it something like: 
+"Response format: 
+Explanation: <Short Explanation based on the content of the text>
+Label: <Fear (1)> | <Admiration (2) | <Other emotion (3)> | <No Emotion (9)>"
+
+Write your instructions in the language you want to annotate in. Annotations might still slip into English depending on model size. I currently have example instructions in German as a sample file, might add an English language example later on.
+
+I added a slot for reminders - if you give the model another reminder of what the labels are, there are fewer false labels.
+
+### A note on wrong label outputs
+
+LLMs, especially smaller ones, tend towards token drift - even if you tell the model to annotate two labels, it might output a third, based on jumps of logic ("I am told to label fear and admiration, here is anger, so I code anger") or simple misspelling ("amdiration"). Use the count function in dplyr to get a count of all labes in your output and recode false labels. Rerun annotation for cases with no clear label.
+If more than 5 percent of your output is false labels, try adjusting the reminder or the instructions or both. I will later at a vignette how to do this.
+
+### A note on context length
+
+Ollama models have a default context length - when they are pulled the first time, they default to 2048. That means that your instructions, few-shot examples + reminder + text can only be around 1000 words per call before your model starts "forgetting" parts of the instructions. You can send a different context length for each call. I have set the default for this function to 5120 to allow for longer instructions.
+You can also change the context length dynamically for each call - when your texts are of different length, it can make sense to adjust context length for different texts to optimize speed versus necessary context length. To do so, hand over a ctx_column. For now, you can estimate context length by counting tokens using quanteda's ntoken for your instructions, examples, reminders, etc, adding them up, and then calculating the resulting length times 2 plus 500 for more than enough space.
+
+Later, I will write a function to estimate context lengths.
+Also, the file returned will tell you the context length you sent and the actual number of tokens the LLM used.
