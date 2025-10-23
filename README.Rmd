@@ -20,9 +20,11 @@ knitr::opts_chunk$set(
 
 This package is just a few functions I wrote around the ollamar-package to make its use more comfortable. For a project I wanted to apply few-shot learning with chain-of-thought in R. There are a few packages that can do few-shot learning (e.g. rollama, klaus), but none had implemented few-shot with chain-of-thought. Also, I like my functions to have progress bars with an ETA, because I am impatient.
 
-If you want more fine-grained options, have a look at the wide variety of packages out there. This package aims to give you one function for the use cases I looked at (text annotation) and is targeted at users with little experience in coding R and experience in manual annotation. My aim is to make the process as close to manual annotation as possible so you can apply existing knowledge.
+If you want more fine-grained options, have a look at the wide variety of packages out there that allow you to craft your call step by step - ellmar, tidyllm, tidyprompt, ollamar are all more powerful. I wrote this package for users who are not experienced with R and overwhelmed by those packages.
 
-The name, as you might have noticed, is a pun on the name of the god of wine. I did whine a lot while writing the code.
+This package aims to give you one function for the use cases I looked at (text annotation) and is targeted at users with little experience in coding R and more experience in manual annotation. My aim is to make the process as close to manual annotation as possible so you can apply existing knowledge.
+
+The name, as you might have noticed, is a pun on the name of the god of wine. I did whine a lot while writing the code, because I am not a good coder either. Wine might have been involved as well.
 
 ## What you get with this package:
 
@@ -30,6 +32,7 @@ The name, as you might have noticed, is a pun on the name of the god of wine. I 
 -	You can handle context length – if your text file contains an estimate of the context length you will need, you can hand it over per call
 -	API nonresponse handling – if your call fails, it sends another call, wait-time and number of tries adjustable
 - API bearer token handling
+- Can use local LiteLLM as well
 -	Annotation warmup – I found that ollama is not always deterministic even if you set a seed in the first few API calls. I have found hints of why that is on github – it has to do with how the KV cache handles RAM. I found that after a few hundred calls with the same annotation instructions, the annotations become stable. Consequently, I added a parameter to simply run the first few hundred cases twice until annotation becomes stable. Will deprecate once/if ollama fixes the issue. 
 
 ## What I plan to do (soon™)
@@ -105,7 +108,7 @@ library(bacchuss)
 example_zero <- bacchuss(example_set, input_column = "paragraphs",
                         instructions = example_instructions,
                         reminder = example_reminder,
-                        model = "mistral-nemo:12b",
+                        model = "mistral-nemo",
                         host = NULL,
                         api_key = NULL)
 
@@ -121,7 +124,7 @@ example_zero_cot <- bacchuss(example_set, input_column = "paragraphs",
                             instructions = example_instructions_expl,
                             reminder = example_reminder_expl,
                             explanations = TRUE,
-                            model = "mistral-nemo:12b",
+                            model = "mistral-nemo",
                             host = NULL,
                             api_key = NULL)
 
@@ -138,7 +141,7 @@ example_few <- bacchuss(example_set, input_column = "paragraphs",
                         examples = example_fewshot$input,
                         codes = example_fewshot$label,
                         reminder = example_reminder, 
-                        model = "mistral-nemo:12b",
+                        model = "mistral-nemo",
                         host = NULL,
                         api_key = NULL)
 
@@ -156,7 +159,7 @@ example_few_cot <- bacchuss(example_set, input_column = "paragraphs",
                             explanations = example_fewshot$explanation,
                             codes = example_fewshot$label,
                             reminder = example_reminder_expl,
-                            model = "mistral-nemo:12b",
+                            model = "mistral-nemo",
                             host = NULL,
                             api_key = NULL)
 
@@ -203,7 +206,8 @@ I added a slot for reminders - if you give the model another reminder of what th
 
 ### A note on wrong label outputs
 
-LLMs, especially smaller ones, tend towards token drift - even if you tell the model to annotate two labels, it might output a third, based on jumps of logic ("I am told to label fear and admiration, here is anger, so I code anger") or simple misspelling ("amdiration"). Use the count function in dplyr to get a count of all labes in your output and recode false labels. Rerun annotation for cases with no clear label.
+LLMs, especially smaller ones, tend towards token drift - even if you tell the model to annotate two labels, it might output a third, based on jumps of logic ("I am told to label fear and admiration, here is anger, so I code anger") or simple misspelling ("amdiration"). Use the count function in dplyr to get a count of all labes in your output and recode false labels (for example, to turn "feer" into "fear"). 
+Rerun annotation for cases with no clear label.
 If more than 5 percent of your output is false labels, try adjusting the reminder or the instructions or both. I will later at a vignette how to do this.
 
 ### A note on context length
