@@ -69,6 +69,7 @@
 #'   \item{tokens_prompt}{Prompt token count.}
 #'   \item{tokens_response}{Response token count.}
 #' }
+#' @export
 bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, codes = NULL,
                            reminder_s, reminder, input_text, est_ctx_len = NA, expected_response_format = c("plain","json"),
                            model, host = NULL, api_key = NULL, backend = c("ollama","litellm"),
@@ -340,6 +341,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #'   \item{tokens_prompt}{Prompt tokens.}
 #'   \item{tokens_response}{Response tokens.}
 #' }
+#' @export
 bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_length",
                     instructions, examples=NULL, explanations=NULL, codes=NULL,
                     reminder_s = "", reminder, expected_response_format = c("plain","json"),
