@@ -47,7 +47,7 @@ For a general overview how to write good annotation instructions I suggest the l
 If there are previous operationalizations for your concept of interest, you can translate them to annotation instructions by putting them into the format above. You will probably still need to do the next steps and improve the instructions.
 For text data you are unfamiliar with, it makes sense to take a qualitative survey of how different expressions of your dimension of interest occur in your texts before writing a codebook from scratch - the context of your data can change how concepts are expressed within the text.
 
-### Step 2: Improve coverage of draft annotations
+## Step 2: Improve coverage of draft annotations
 
 ### Step 2.1: Test draft annotation instructions
 

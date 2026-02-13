@@ -66,7 +66,7 @@ of interest occur in your texts before writing a codebook from scratch -
 the context of your data can change how concepts are expressed within
 the text.
 
-### Step 2: Improve coverage of draft annotations
+## Step 2: Improve coverage of draft annotations
 
 ### Step 2.1: Test draft annotation instructions
 
