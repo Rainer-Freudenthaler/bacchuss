@@ -142,11 +142,18 @@ The function used here will give you the final label it arrived on,
 labels for all runs, and agreement. Sort by agreement and inspect the
 cases that have low agreement between runs.
 
-Visually inspect: - Why are those cases hard for annotation? Can the
-rules be clarified? - which cases were correctly labelled? - are there
-clear cases not described in your coding instructions? - Note down
-general problems of your instructions - Improve annotation instructions
-based on those notes - add decision rules, clarify your concept
+Visually inspect:
+
+- Why are those cases hard for annotation? Can the rules be clarified?
+
+- which cases were correctly labelled?
+
+- are there clear cases not described in your coding instructions?
+
+- Note down general problems of your instructions
+
+- Improve annotation instructions based on those notes - add decision
+  rules, clarify your concept
 
 (Note: In this vignette I am here using the same data I will later use
 for step 3. In your own projects, instead use a random sample from your
@@ -301,12 +308,16 @@ With this annotation procedure, reliability already has improved a lot.
 
 #### Choosing few-shot examples
 
-A few general rules for few-shot examples. You want: - approximately
-equal distribution of examples for each category (even if they do not
-occur at an equal rate in your data) - at least one general, easy case
-for each label - additionally, exemplary cases for your decision rules.
-If you give explanations, it can help to explicate the rule you used to
-decide the case to reinforce decision rules
+A few general rules for few-shot examples. You want:
+
+- approximately equal distribution of examples for each category (even
+  if they do not occur at an equal rate in your data)
+
+- at least one general, easy case for each label
+
+- additionally, exemplary cases for your decision rules. If you give
+  explanations, it can help to explicate the rule you used to decide the
+  case to reinforce decision rules
 
 DO NOT take examples from your data as few-shot examples - this might
 bias results, especially if you re-use those data within your validation
@@ -425,13 +436,26 @@ later ad a vignette that explains this step.
 
 Export a sample without llm labels and instruct human annotators to
 label your data. They can use the same annotation instructions as your
-llm. As with regular human annotation, plan for annotator training: -
-before letting them annotate the real sample, let them code smaller
-training samples and discuss unclear cases - spend enough time on
-explaining dimensions, looking over examples, discussing mismatching
-annotations before annotating the real sample - Only once you are happy
-with their performance do the real human gold standard data annotation
-step
+llm. As with regular human annotation, plan for annotator training:
+
+- before letting them annotate the real sample, let them code smaller
+  training samples and discuss unclear cases
+
+- spend enough time on explaining dimensions, looking over examples,
+  discussing mismatching annotations before annotating the real sample
+
+- Only once you are happy with their performance do the real human gold
+  standard data annotation step
+
+Then, you first measure reliability of your human coders. Intercoder
+reliability, measured with Krippendorff’s Alpha, tells you if your human
+coders understood the annotation instructions well enough.
+
+Then you measure how well the LLM annotations match human annotation,
+using F-Scores, Precision and Recall.
+
+Report both human annotation reliability and LLM validity scores for
+intersubjective reproducibility.
 
 For an overview over human annotation I again suggest the literature on
 human annotation - for example, Kimberly Neuendorf’s “The Content
