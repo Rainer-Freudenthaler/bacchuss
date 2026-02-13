@@ -1,7 +1,7 @@
 Package: bacchuss
 Type: Package
 Title: But Another Comfortable Chat Utility for Social Scientists
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: c(
     person(
       "Rainer", "Freudenthaler",
@@ -22,6 +22,12 @@ Imports:
     ollamar (>= 1.2.2),
     progress (>= 1.2.3),
     purrr (>= 1.1.0),
-    stringr (>= 1.5.2)
+    stringr (>= 1.5.2),
+    httr2,
+    jsonlite
 Depends: 
     R (>= 3.5)
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

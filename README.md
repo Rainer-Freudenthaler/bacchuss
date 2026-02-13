@@ -246,6 +246,14 @@ add an English language example later on.
 I added a slot for reminders - if you give the model another reminder of
 what the labels are, there are fewer false labels.
 
+### Vignettes
+
+I will add vignettes explaining the use of this package over time.
+
+[Annotation routine](vignettes/routine.Rmd) is a vignette that explains
+how to write your own annotation instructions from scratch and improve
+them until you’re satisfied with the results.
+
 ### A note on wrong label outputs
 
 LLMs, especially smaller ones, tend towards token drift - even if you

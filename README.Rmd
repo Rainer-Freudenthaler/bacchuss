@@ -49,7 +49,7 @@ The name, as you might have noticed, is a pun on the name of the god of wine. I 
 
 You can install the development version of bacchuss like this:
 
-```{r install, echo=FALSE}
+```{r install, eval = FALSE}
 remotes::install_github("Rainer-Freudenthaler/bacchuss")
 
 library(bacchuss)
@@ -69,7 +69,7 @@ set backend = "litellm".
 
 The package contains a few example files to test the function:
 
-```{r sample1, echo=FALSE}
+```{r sample1, eval = FALSE}
 library(bacchuss)
 
 ### A set of files to annotate - with human annotation to compare
@@ -102,7 +102,7 @@ If you want to do zero-shot annotation, you only need your dataframe with texts,
 
 Use host and api_key for access to an API over the web/network.
 
-```{r example1, echo=FALSE}
+```{r example1, eval = FALSE}
 library(bacchuss)
 
 example_zero <- bacchuss(example_set, input_column = "paragraphs",
@@ -117,7 +117,7 @@ summary(example_zero)
 
 You can also prompt the model to give a short explanation before choosing the label (that is one way to implement chain of thought prompting). Just set explanations TRUE.
 
-```{r example2, echo=FALSE}
+```{r example2, eval = FALSE}
 library(bacchuss)
 
 example_zero_cot <- bacchuss(example_set, input_column = "paragraphs",
@@ -133,7 +133,7 @@ summary(example_zero_cot)
 
 For few-shot annotation, you hand over a few examples with corresponding labels. I would suggest not making too many, because they take up context length and slow down annotation. Make a few simple cases and one case per complicated decision rule, and try to have a balanced set (equal numbers of cases for each category).
 
-```{r example3, echo=FALSE}
+```{r example3, eval = FALSE}
 library(bacchuss)
 
 example_few <- bacchuss(example_set, input_column = "paragraphs",
@@ -150,7 +150,7 @@ summary(example_few)
 
 You can combine few-shot annotation with explanations. In my experience, this increases reliability and makes it possible to investigate false labels for systematic errors.
 
-```{r example4, echo=FALSE}
+```{r example4, eval = FALSE}
 library(bacchuss)
 
 example_few_cot <- bacchuss(example_set, input_column = "paragraphs",
@@ -171,7 +171,7 @@ summary(example_few_cot)
 The example dataset contains human annotation to compare to your llm annotation. Expect a Kappa of between
 .62 and .73 for admiration and between .70 and .76 for fear for example_few_cot. Under the other conditions, reliability will be lower.
 
-```{r example5, echo=FALSE}
+```{r example5, eval = FALSE}
 example_zero$fear_human <- example_zero$Emotion == "Angst/Furcht (1)"
 
 example_zero$fear_llm <- example_zero$labels == "Angst/Furcht (1)"
@@ -203,6 +203,12 @@ Label: <Fear (1)> | <Admiration (2) | <Other emotion (3)> | <No Emotion (9)>"
 Write your instructions in the language you want to annotate in. Annotations might still slip into English depending on model size. I currently have example instructions in German as a sample file, might add an English language example later on.
 
 I added a slot for reminders - if you give the model another reminder of what the labels are, there are fewer false labels.
+
+### Vignettes
+
+I will add vignettes explaining the use of this package over time.
+
+[Annotation routine](vignettes/routine.Rmd) is a vignette that explains how to write your own annotation instructions from scratch and improve them until you're satisfied with the results.
 
 ### A note on wrong label outputs
 

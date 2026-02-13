@@ -2,3 +2,6 @@
 
 export(bacchuss)
 export(bacchuss_satyr)
+export(briseus)
+export(isodaetes)
+export(liknites)
