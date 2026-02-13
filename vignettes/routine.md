@@ -66,7 +66,7 @@ of interest occur in your texts before writing a codebook from scratch -
 the context of your data can change how concepts are expressed within
 the text.
 
-## Step 2.1: Test draft annotation instructions
+### Step 2.1: Test draft annotation instructions
 
 When you have a first draft for annotation instructions, run annotation
 on a small sub-sample of your data.
@@ -96,7 +96,7 @@ Visually inspect your results:
 for step 3. In your own projects, instead use a random sample from your
 data here.)
 
-### Note: Repairing mistyped labels:
+#### Note: Repairing mistyped labels:
 
 As noted in the readme, small LLMs have a tendency to mistype labels due
 to token drift. Even if you tell the model to annotate two labels, it
@@ -109,7 +109,7 @@ more than 5 percent of your output is false labels, try adjusting the
 reminder or the instructions or both. I will later at a vignette how to
 do this.
 
-## Step 2.2: Check for hard cases
+### Step 2.2: Check for hard cases
 
 Once you have improved your annotation instructions in step 2.1, it is
 time to test whether there are hard cases the llm struggles with - cases
@@ -151,7 +151,7 @@ for step 3. In your own projects, instead use a random sample from your
 data here. It is probably best to draw new samples between each step to
 cover a broader range of examples.)
 
-## Repeat steps 2.1 and 2.2 until your annotation instructions cover the concept broadly
+### Repeat steps 2.1 and 2.2 until your annotation instructions cover the concept broadly
 
 This does not mean that reliability is high at this point - you may need
 to add chain of thought prompting or few-shot examples to reach
@@ -174,7 +174,7 @@ this dataset to further optimization.
 For these steps, I have added a sample dataset of human curated data
 from a previous project.
 
-## Step 3.1: Test improvements of the annotation instructions
+### Step 3.1: Test improvements of the annotation instructions
 
 Run bacchuss with your improved annotation instructions and measure how
 well it conforms to your human standard labels.
@@ -219,7 +219,7 @@ data in this step to give separate results for only those two labels.
 For your own data, it usually makes sense to report at least separate
 scores for each label.)
 
-## Step 3.2: Add Chain-of-Thought, few-shot examples if necessary
+### Step 3.2: Add Chain-of-Thought, few-shot examples if necessary
 
 You can add instructions to output an Explanation for why a label was
 chosen - a form of chain-of-thought prompting. Instruct the model to not
@@ -297,7 +297,7 @@ caret::confusionMatrix(mt_admiration_few_cot, mode = "prec_recall", positive = "
 
 With this annotation procedure, reliability already has improved a lot.
 
-### Choosing few-shot examples
+#### Choosing few-shot examples
 
 A few general rules for few-shot examples. You want: - approximately
 equal distribution of examples for each category (even if they do not
@@ -342,7 +342,7 @@ few_shot_curration <- liknites(n_runs = 3,
 View(few_shot_curration)
 ```
 
-### Where to put few-shot examples
+#### Where to put few-shot examples
 
 In standard use, bacchuss expects you to hand over examples, codes and
 explanations and then puts them in the user-messages and assistant
@@ -351,7 +351,7 @@ achieve similar validity. If you want to do that instead, add them to
 your system prompt and leave those variables NULL for bacchuss (or TRUE
 for explanations, if applicable).
 
-## Step 3.3: Hard cases with few-shot instructions
+### Step 3.3: Hard cases with few-shot instructions
 
 You can also test the degree of insecurity left over with your new
 instructions - briseus also works with few-shot and chain of thought.
@@ -376,7 +376,7 @@ few_cot_test_3_3 <- briseus(example_set, input_column = "paragraphs", n_runs = 5
 View(few_cot_test_3_3)
 ```
 
-## Step 3.4: Compare different llms
+### Step 3.4: Compare different llms
 
 Finally, comparing different LLMs can be useful - some are better at
 your annotation task than others.
@@ -385,7 +385,7 @@ Generally, try to write good annotation instructions first and do not
 adapt too much to peculiarities of one llm - instead, write them
 agnostically and then choose what llm works best with them.
 
-## Repeat steps 3.1-3.4 until you achieve acceptable results
+### Repeat steps 3.1-3.4 until you achieve acceptable results
 
 ## Step 4: Representative human validation
 
@@ -411,7 +411,7 @@ example_few_cot <- bacchuss(your_data, input_column = "paragraphs",
 View(example_few_cot)
 ```
 
-## Step 4.1: Unweighed or weighed human annotation sampling
+### Step 4.1: Unweighed or weighed human annotation sampling
 
 Draw a sample from the LLM-annotated set. Depending on how prevalent
 your dimension of interest is choose random sampling or weighed
@@ -419,7 +419,7 @@ sampling. Weighed sampling means oversampling the (rarer) positive
 category and adjusting validation measurements to that weighing. I will
 later ad a vignette that explains this step.
 
-## Step 4.2: Measuring human reliability and LLM validity
+### Step 4.2: Measuring human reliability and LLM validity
 
 Export a sample without llm labels and instruct human annotators to
 label your data. They can use the same annotation instructions as your
@@ -439,12 +439,12 @@ One note: If your human annotators participated in steps 2 - 3, this
 very likely decreases training times necessary for the human annotation
 step.
 
-## Step 4.3: Final analysis or further improvements
+### Step 4.3: Final analysis or further improvements
 
 Validate how well your human annotations match the LLM’s labels. If you
 are happy with the results, you can move on to step 5.
 
-## Step 4.3.1: If necessary, improve annotation instructions, remember accurate weighing
+### Step 4.3.1: If necessary, improve annotation instructions, remember accurate weighing
 
 If you are unhappy with your results, you can improve annotation
 instructions in a last round to see if you can improve results. If you
