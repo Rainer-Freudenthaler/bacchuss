@@ -59,7 +59,7 @@ library(bacchuss)
 
 To install a local Ollama instance, follow the instructions here:
 
-[Install Ollama]https://ollama.com/download
+[Install Ollama](https://ollama.com/download)
 
 You can also access local Ollama API's if you know their address. Then you don't need  install it manually. Additionally, I added functionality to address a local LiteLLM instance. If you do so,
 set backend = "litellm".
@@ -208,7 +208,9 @@ I added a slot for reminders - if you give the model another reminder of what th
 
 I will add vignettes explaining the use of this package over time.
 
-[Annotation routine](vignettes/routine.Rmd) is a vignette that explains how to write your own annotation instructions from scratch and improve them until you're satisfied with the results.
+[Annotation routine](vignettes/routine.md) is a vignette that explains how to write your own annotation instructions from scratch and improve them until you're satisfied with the results.
+
+[Alternate modes](vignettes/modes.md) is a vignette that explains how to use bacchuss with a litellm backend and how to use json mode.
 
 ### A note on wrong label outputs
 

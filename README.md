@@ -75,7 +75,7 @@ library(bacchuss)
 
 To install a local Ollama instance, follow the instructions here:
 
-\[Install Ollama\]<https://ollama.com/download>
+[Install Ollama](https://ollama.com/download)
 
 You can also access local Ollama API’s if you know their address. Then
 you don’t need install it manually. Additionally, I added functionality
@@ -250,9 +250,12 @@ what the labels are, there are fewer false labels.
 
 I will add vignettes explaining the use of this package over time.
 
-[Annotation routine](vignettes/routine.Rmd) is a vignette that explains
+[Annotation routine](vignettes/routine.md) is a vignette that explains
 how to write your own annotation instructions from scratch and improve
 them until you’re satisfied with the results.
+
+[Alternate modes](vignettes/modes.md) is a vignette that explains how to
+use bacchuss with a litellm backend and how to use json mode.
 
 ### A note on wrong label outputs
 

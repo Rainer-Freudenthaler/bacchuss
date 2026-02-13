@@ -1,6 +1,6 @@
 ---
 title: "Annotation Routine"
-output: rmarkdown::html_vignette
+output: github_document
 vignette: >
   %\VignetteIndexEntry{Routine}
   %\VignetteEngine{knitr::rmarkdown}

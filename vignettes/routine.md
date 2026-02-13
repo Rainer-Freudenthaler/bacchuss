@@ -1,0 +1,465 @@
+Annotation Routine
+================
+
+# A routine for developing annotation instructions
+
+In this vignette I am presenting a general routine for developing
+intersubjectively valid annotation instructions for your llm-based
+annotation. For these steps I will use the example data from another
+project to illustrate steps 1 - 3. I will note peculiarities in the
+dataset (or where I stray from this routine) where necessary.
+
+## Step 1: Write a first draft of annotation instructions
+
+Write annotation instructions. They work similar to codebooks for human
+annotation: They explain the purpose of your measurement, what data to
+expect, how concepts are defined and how they are operationalized.
+
+Unlike a human codebook, bacchuss is structured for measuring one
+dimension at a time. If you have multiple dimensions of interest, I
+suggest annotating these dimensions in separate steps with separate
+annotation instructions. While it is possible to have a
+multi-dimensional output (and I might implement it at a later date),
+keeping annotation instructions separate has the following advantages:
+
+- We safe space within the model’s context window for each call
+- We avoid coding instructions of an earlier step confusing later
+  annotation.
+
+For Codebook structure, I suggest the following general structure:
+
+1.  Role description: a neutral description of the general task
+2.  Context: What data the LLM can expect - do you add metadata? What
+    should it focus on? What is the data source? Often it is helpful to
+    instruct the model to be literal and search for explicit expressions
+    of the concept and not interpret the text using context knowledge.
+3.  An explanation for each label: A general definition, distinguishing
+    criteria (with different ways the concept is expressed if
+    necessary), typical markers/keywords
+4.  Decision rules: Often, you will identify cases where you need clear
+    demarkation rules to distinguish labels. Decision rules are the
+    place for explaining those decision rules
+5.  Output format: bacchuss supports 2 output formats: Either it uses
+    regular expressions, then it expects the format “Label: <Label>
+    Explanation: <Explanation>”, or it expects JSON output with “label”
+    and “explanation” as separate fields. We will use the former format
+    here - for JSON mode see documentation. I will add a JSON vignette
+    in a later version.
+
+Expect to have a general idea of 1, 2, 3 and 5 before moving on to the
+next step - adjust all of them and add 4 gradually as you see more hard
+cases.
+
+I usually send a short reminder of coding instructions after the text to
+code. This should be a one- or two-sentence summary of the most
+important points of your codebook.
+
+For a general overview how to write good annotation instructions I
+suggest the literature on human annotation - for example, Kimberly
+Neuendorf’s “The Content Analysis Guidebook”. If there are previous
+operationalizations for your concept of interest, you can translate them
+to annotation instructions by putting them into the format above. You
+will probably still need to do the next steps and improve the
+instructions. For text data you are unfamiliar with, it makes sense to
+take a qualitative survey of how different expressions of your dimension
+of interest occur in your texts before writing a codebook from scratch -
+the context of your data can change how concepts are expressed within
+the text.
+
+## Step 2.1: Test draft annotation instructions
+
+When you have a first draft for annotation instructions, run annotation
+on a small sub-sample of your data.
+
+``` r
+library(bacchuss)
+
+annotation_test_2_1 <- bacchuss(example_set, input_column = "paragraphs",
+                        instructions = example_instructions,
+                        reminder = example_reminder,
+                        model = "mistral-nemo",
+                        host = NULL,
+                        api_key = NULL)
+
+View(example_zero)
+```
+
+Visually inspect your results:
+
+- which cases were correctly labelled?
+- are there clear cases not described in your coding instructions?
+- Note down general problems of your instructions
+- Improve annotation instructions based on those notes - add decision
+  rules, clarify your concept
+
+(Note: In this vignette I am here using the same data I will later use
+for step 3. In your own projects, instead use a random sample from your
+data here.)
+
+### Note: Repairing mistyped labels:
+
+As noted in the readme, small LLMs have a tendency to mistype labels due
+to token drift. Even if you tell the model to annotate two labels, it
+might output a third, based on jumps of logic (“I am told to label fear
+and admiration, here is anger, so I code anger”) or simple misspelling
+(“amdiration”). Use the count function in dplyr to get a count of all
+labes in your output and recode false labels (for example, to turn
+“feer” into “fear”). Rerun annotation for cases with no clear label. If
+more than 5 percent of your output is false labels, try adjusting the
+reminder or the instructions or both. I will later at a vignette how to
+do this.
+
+## Step 2.2: Check for hard cases
+
+Once you have improved your annotation instructions in step 2.1, it is
+time to test whether there are hard cases the llm struggles with - cases
+where it would output different labels because the annotation
+instructions give some leeway for interpretation. In human annotation,
+we often note down such hard cases during codebook improvement - this
+step is meant to do the same for LLM annotation. We run annotation with
+higher temperature and multiple runs and note disagreement.
+
+The function briseus (another name for the god Bacchus, translating to
+“he who prevails”) - is meant for this purpose.
+
+``` r
+library(bacchuss)
+
+annotation_test_2_2 <- briseus(example_set, input_column = "paragraphs", n_runs = 5,
+                        temperature = 0.7,
+                        instructions = example_instructions,
+                        reminder = example_reminder,
+                        model = "mistral-nemo",
+                        host = NULL,
+                        api_key = NULL)
+
+View(example_zero)
+```
+
+The function used here will give you the final label it arrived on,
+labels for all runs, and agreement. Sort by agreement and inspect the
+cases that have low agreement between runs.
+
+Visually inspect: - Why are those cases hard for annotation? Can the
+rules be clarified? - which cases were correctly labelled? - are there
+clear cases not described in your coding instructions? - Note down
+general problems of your instructions - Improve annotation instructions
+based on those notes - add decision rules, clarify your concept
+
+(Note: In this vignette I am here using the same data I will later use
+for step 3. In your own projects, instead use a random sample from your
+data here. It is probably best to draw new samples between each step to
+cover a broader range of examples.)
+
+## Repeat steps 2.1 and 2.2 until your annotation instructions cover the concept broadly
+
+This does not mean that reliability is high at this point - you may need
+to add chain of thought prompting or few-shot examples to reach
+acceptable reliability. Note how the final annotation instructions of
+the sample data code almost none of the fear cases - that only really
+started working with few-shot examples.
+
+Instead, look
+
+## Step 3: Test non-representative sample of hard and soft cases
+
+Once you think you have broadly covered your concept and it’s the time
+for refining your instructions, we move on to step 3. For this step, you
+collect sample cases from rounds 2.1 + 2.2, decide on correct labels (in
+this step, you can use consensus coding - all project members discuss
+and agree on which labels should be correct for this small set), and use
+this dataset to further optimization.
+
+For these steps, I have added a sample dataset of human curated data
+from a previous project.
+
+## Step 3.1: Test improvements of the annotation instructions
+
+Run bacchuss with your improved annotation instructions and measure how
+well it conforms to your human standard labels.
+
+``` r
+library(bacchuss)
+
+example_zero <- bacchuss(example_set, input_column = "paragraphs",
+                        instructions = example_instructions,
+                        reminder = example_reminder,
+                        model = "mistral-nemo",
+                        host = NULL,
+                        api_key = NULL)
+
+View(example_zero)
+```
+
+Then compare your data with the human standard labels:
+
+``` r
+example_zero$fear_human <- example_zero$Emotion == "Angst/Furcht (1)"
+
+example_zero$fear_llm <- example_zero$labels == "Angst/Furcht (1)"
+
+example_zero$adm_human <- example_zero$Emotion == "Bewunderung/tiefer Respekt (2)"
+
+example_zero$adm_llm <- example_zero$labels == "Bewunderung/tiefer Respekt (2)"
+
+mt_fear_3_1 <- table(example_zero$fear_llm, example_zero$fear_human)
+caret::confusionMatrix(mt_fear_3_1, mode = "prec_recall", positive = "TRUE")
+
+mt_admiration_3_1 <- table(example_zero$adm_llm, example_zero$adm_human)
+caret::confusionMatrix(mt_admiration_3_1, mode = "prec_recall", positive = "TRUE")
+```
+
+You will see that with only the annotation instructions, the rules for
+detecting fear seem to be very unreliable - we barely pick up fear.
+
+(In the example data, we were only interested in the categories 1 and 2,
+and treated 4 and 9 as “other” in our analysis. That’s why I recode the
+data in this step to give separate results for only those two labels.
+For your own data, it usually makes sense to report at least separate
+scores for each label.)
+
+## Step 3.2: Add Chain-of-Thought, few-shot examples if necessary
+
+You can add instructions to output an Explanation for why a label was
+chosen - a form of chain-of-thought prompting. Instruct the model to not
+just output a label, but also an explanation, and set explanation to
+true.
+
+``` r
+library(bacchuss)
+
+example_zero_cot <- bacchuss(example_set, input_column = "paragraphs",
+                            instructions = example_instructions_expl,
+                            reminder = example_reminder_expl,
+                            explanations = TRUE,
+                            model = "mistral-nemo",
+                            host = NULL,
+                            api_key = NULL)
+
+View(example_zero_cot)
+```
+
+This often improves your results. You can also add few-shot examples:
+
+``` r
+library(bacchuss)
+
+example_few <- bacchuss(example_set, input_column = "paragraphs",
+                        instructions = example_instructions,
+                        examples = example_fewshot$input,
+                        codes = example_fewshot$label,
+                        reminder = example_reminder, 
+                        model = "mistral-nemo",
+                        host = NULL,
+                        api_key = NULL)
+
+View(example_few)
+```
+
+And you can combine few-shot and chain-of-thought by providing
+explanations for each few-shot label (and using annotation instructions
+that instruct to output explanations).
+
+``` r
+library(bacchuss)
+
+example_few_cot <- bacchuss(example_set, input_column = "paragraphs",
+                            instructions = example_instructions_expl,
+                            examples = example_fewshot$input,
+                            explanations = example_fewshot$explanation,
+                            codes = example_fewshot$label,
+                            reminder = example_reminder_expl,
+                            model = "mistral-nemo",
+                            host = NULL,
+                            api_key = NULL)
+
+View(example_few_cot)
+```
+
+As you will see, this improves validity:
+
+``` r
+example_few_cot$fear_human <- example_few_cot$Emotion == "Angst/Furcht (1)"
+
+example_few_cot$fear_llm <- example_few_cot$labels == "Angst/Furcht (1)"
+
+example_few_cot$adm_human <- example_few_cot$Emotion == "Bewunderung/tiefer Respekt (2)"
+
+example_few_cot$adm_llm <- example_few_cot$labels == "Bewunderung/tiefer Respekt (2)"
+
+mt_fear_few_cot <- table(example_few_cot$fear_llm, example_few_cot$fear_human)
+caret::confusionMatrix(mt_fear_few_cot, mode = "prec_recall", positive = "TRUE")
+
+mt_admiration_few_cot <- table(example_few_cot$adm_llm, example_few_cot$adm_human)
+caret::confusionMatrix(mt_admiration_few_cot, mode = "prec_recall", positive = "TRUE")
+```
+
+With this annotation procedure, reliability already has improved a lot.
+
+### Choosing few-shot examples
+
+A few general rules for few-shot examples. You want: - approximately
+equal distribution of examples for each category (even if they do not
+occur at an equal rate in your data) - at least one general, easy case
+for each label - additionally, exemplary cases for your decision rules.
+If you give explanations, it can help to explicate the rule you used to
+decide the case to reinforce decision rules
+
+DO NOT take examples from your data as few-shot examples - this might
+bias results, especially if you re-use those data within your validation
+steps. Instead, write new examples - or let an llm write them (but be
+careful to curate them to: make them sound natural, not overdo markers
+and key phrases. Also, preferable do not use the same llm for few shot
+example generation and annotation)
+
+Once you have a set of cases to choose from, another utility function
+can come useful: liknites runs over your few-shot examples, leaving out
+all labels except one and then tests if it would label this one case
+correctly. It gives you agreement to show which label would be labeled
+correctly the most if left out. This method is called leave-one-out
+testing. (Liknites is another name for the god Bacchus, it means: “he of
+the winnowing fan” - as wikipedia notes “A winnowing fan was used to
+separate the chaff from the grain.”)
+
+Generally, you will want: Only a few (often: one) clear case per label
+that would achieve high agreement - those are there to keep you grounded
+to the core concept. The rest should be hard cases - those it gets wrong
+more often if the example is not in the list. Curate your few-shot
+examples for a good balance of those cases.
+
+``` r
+library(bacchuss)
+
+few_shot_curration <- liknites(n_runs = 3,
+                             instructions = example_instructions_expl,
+                             examples = example_fewshot$input,
+                             explanations = example_fewshot$explanation,
+                             codes = example_fewshot$label,
+                             reminder = example_reminder_expl,
+                             model = "mistral-nemo")
+
+View(few_shot_curration)
+```
+
+### Where to put few-shot examples
+
+In standard use, bacchuss expects you to hand over examples, codes and
+explanations and then puts them in the user-messages and assistant
+responses sent to the llm. Putting examples into the system prompt can
+achieve similar validity. If you want to do that instead, add them to
+your system prompt and leave those variables NULL for bacchuss (or TRUE
+for explanations, if applicable).
+
+## Step 3.3: Hard cases with few-shot instructions
+
+You can also test the degree of insecurity left over with your new
+instructions - briseus also works with few-shot and chain of thought.
+That means you can identify which of the text examples in your sample
+set generate disagreement in multiple runs
+
+``` r
+library(bacchuss)
+
+few_cot_test_3_3 <- briseus(example_set, input_column = "paragraphs", n_runs = 5,
+                            temperature = 0.7,
+                            input_column = "paragraphs",
+                            instructions = example_instructions_expl,
+                            examples = example_fewshot$input,
+                            explanations = example_fewshot$explanation,
+                            codes = example_fewshot$label,
+                            reminder = example_reminder_expl,
+                            model = "mistral-nemo",
+                            host = NULL,
+                            api_key = NULL)
+
+View(few_cot_test_3_3)
+```
+
+## Step 3.4: Compare different llms
+
+Finally, comparing different LLMs can be useful - some are better at
+your annotation task than others.
+
+Generally, try to write good annotation instructions first and do not
+adapt too much to peculiarities of one llm - instead, write them
+agnostically and then choose what llm works best with them.
+
+## Repeat steps 3.1-3.4 until you achieve acceptable results
+
+## Step 4: Representative human validation
+
+Once the annotation of the non-representative sample is acceptable, you
+should test if the annotation works with a representative, real-world
+sample. Let your LLM annotate a large enough sample for human
+validation. I currently do not have data for these steps in the package
+data set.
+
+``` r
+library(bacchuss)
+
+example_few_cot <- bacchuss(your_data, input_column = "paragraphs",
+                            instructions = example_instructions_expl,
+                            examples = example_fewshot$input,
+                            explanations = example_fewshot$explanation,
+                            codes = example_fewshot$label,
+                            reminder = example_reminder_expl,
+                            model = "mistral-nemo",
+                            host = NULL,
+                            api_key = NULL)
+
+View(example_few_cot)
+```
+
+## Step 4.1: Unweighed or weighed human annotation sampling
+
+Draw a sample from the LLM-annotated set. Depending on how prevalent
+your dimension of interest is choose random sampling or weighed
+sampling. Weighed sampling means oversampling the (rarer) positive
+category and adjusting validation measurements to that weighing. I will
+later ad a vignette that explains this step.
+
+## Step 4.2: Measuring human reliability and LLM validity
+
+Export a sample without llm labels and instruct human annotators to
+label your data. They can use the same annotation instructions as your
+llm. As with regular human annotation, plan for annotator training: -
+before letting them annotate the real sample, let them code smaller
+training samples and discuss unclear cases - spend enough time on
+explaining dimensions, looking over examples, discussing mismatching
+annotations before annotating the real sample - Only once you are happy
+with their performance do the real human gold standard data annotation
+step
+
+For an overview over human annotation I again suggest the literature on
+human annotation - for example, Kimberly Neuendorf’s “The Content
+Analysis Guidebook”.
+
+One note: If your human annotators participated in steps 2 - 3, this
+very likely decreases training times necessary for the human annotation
+step.
+
+## Step 4.3: Final analysis or further improvements
+
+Validate how well your human annotations match the LLM’s labels. If you
+are happy with the results, you can move on to step 5.
+
+## Step 4.3.1: If necessary, improve annotation instructions, remember accurate weighing
+
+If you are unhappy with your results, you can improve annotation
+instructions in a last round to see if you can improve results. If you
+do that, you need to report it with the results, and, depending on the
+scale of your changes, might need to test validity with another human
+annotated validation set.
+
+## Step 5: Report results
+
+If you followed the steps of this procedure, you should report these
+steps in your final analysis. Most papers I have seen thus far often
+report “we improved the prompt in an iterative process” with sparse
+details, so if you report more details than that, reviewers will be very
+grateful. At the same time, many details of this process probably should
+go into the Appendix - just describe steps 1, 2, and 3 in a short
+paragraph, focus your reporting on step 4, and put details into the
+Appendix, next to your final annotation instructions. For future
+research it is also very useful if you put your procedure on an online
+appendix, github or osf. Your colleagues will thank you.
