@@ -159,7 +159,8 @@ acceptable reliability. Note how the final annotation instructions of
 the sample data code almost none of the fear cases - that only really
 started working with few-shot examples.
 
-Instead, look
+Instead, be sure that your instructions cover all cases (even if they
+are not correctly labelled yet) and then proceed to step 3.
 
 ## Step 3: Test non-representative sample of hard and soft cases
 
