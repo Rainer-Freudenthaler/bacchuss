@@ -203,12 +203,17 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
       # accept only if token counters present
       # ollama returns NULL token counts when it loops endlessly
 
-      ok_tokens <- tryCatch(!is.null(resp$cache[[ls(resp$cache)[1]]]$prompt_eval_count), error=function(e) FALSE)
+      body_json <- tryCatch(httr2::resp_body_json(resp), error = function(e) NULL)
+      
+      ok_tokens <- !is.null(body_json) &&
+        !is.null(body_json$prompt_eval_count) &&
+        !is.null(body_json$eval_count)
+      
       if (!is.null(res) && (ok_tokens || !retry_loop)) {
         response_text <- res
         if (ok_tokens) {
-          tokens_prompt <- httr2::resp_body_json(resp)$prompt_eval_count
-          tokens_response <- httr2::resp_body_json(resp)$eval_count
+          tokens_prompt <- body_json$prompt_eval_count
+          tokens_response <- body_json$eval_count
         }
         break
       }
