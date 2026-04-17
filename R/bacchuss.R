@@ -32,7 +32,8 @@
 #' @param reminder Short reminder sent after all coding examples. Can
 #' Increase stability of labels - repeat instructions for available labels,
 #' rules the model needs reminder of (for example "do not interpret, only
-#' go by what's explicit in the text").
+#' go by what's explicit in the text"). If reminder is NULL, no reminder and no
+#' reminder_s will be sent.
 #' @param input_text The text to annotate
 #' @param expected_response_format Do you use plaintext or json format? Default plain.
 #' @param est_ctx_len The estimated context length for instructions, examples,
@@ -121,7 +122,11 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
     list()
   } else {
     purrr::map2(seq_along(examples), examples, function(i, ex_text) {
-      user_msg <- list(role="user", content = paste0("Text: '", ex_text, "'\nReminder: ", reminder_s))
+      if (is.null(reminder)){
+        user_msg <- list(role="user", content = paste0("Text: '", ex_text))
+      } else {
+        user_msg <- list(role="user", content = paste0("Text: '", ex_text, "'\nReminder: ", reminder_s))
+      }
       if (expected_response_format == "json") {
         out_list <- list()
         if (is.character(explanations) && !is.na(explanations[i]) && nzchar(explanations[i])) {
@@ -144,7 +149,12 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
     }) |> purrr::list_flatten()
   }
 
-  input_message <- list(role="user", content = paste0("Text: '", input_text, "'\nReminder: ", reminder))
+  if (is.null(reminder)){
+    input_message <- list(role="user", content = paste0("Text: '", input_text))
+  } else {
+    input_message <- list(role="user", content = paste0("Text: '", input_text, "'\nReminder: ", reminder))
+  }
+  
   messages <- c(list(system_message), example_messages, list(input_message))
   seed_s <- seed
 
@@ -304,7 +314,8 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' @param reminder Short reminder sent after all coding examples. Can
 #' Increase stability of labels - repeat instructions for available labels,
 #' rules the model needs reminder of (for example "do not interpret, only
-#' go by what's explicit in the text").
+#' go by what's explicit in the text"). If reminder is NULL, no reminder and no
+#' reminder_s will be sent.
 #' @param expected_response_format Do you use plaintext or json format? Default plain.
 #' @param model Which LLM model to use. No default.
 #' @param host Address of the host you use. Default: local ollama
