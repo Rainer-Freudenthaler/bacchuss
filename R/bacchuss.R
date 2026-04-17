@@ -126,7 +126,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
   } else {
     purrr::map2(seq_along(examples), examples, function(i, ex_text) {
       if (is.null(reminder)){
-        user_msg <- list(role="user", content = paste0("Text: '", ex_text))
+        user_msg <- list(role="user", content = paste0("Text: '", ex_text, "'"))
       } else {
         user_msg <- list(role="user", content = paste0("Text: '", ex_text, "'\nReminder: ", reminder_s))
       }
@@ -153,7 +153,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
   }
 
   if (is.null(reminder)){
-    input_message <- list(role="user", content = paste0("Text: '", input_text))
+    input_message <- list(role="user", content = paste0("Text: '", input_text, "'"))
   } else {
     input_message <- list(role="user", content = paste0("Text: '", input_text, "'\nReminder: ", reminder))
   }
@@ -168,15 +168,30 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 
   for (i in seq_len(max_retries)) {
     if (backend == "ollama") {
-      req <- ollamar::chat(model = model,
-                           messages = messages,
-                           keep_alive = "10m",
-                           output = "req",
-                           temperature = temperature,
-                           num_ctx = max_ctx,
-                           num_predict = max_tokens,
-                           host = host,
-                           seed = seed_s)
+      if (is.null(max_tokens)) {
+        req <- ollamar::chat(
+          model = model,
+          messages = messages,
+          keep_alive = "10m",
+          output = "req",
+          temperature = temperature,
+          num_ctx = max_ctx,
+          host = host,
+          seed = seed_s
+        )
+      } else {
+        req <- ollamar::chat(
+          model = model,
+          messages = messages,
+          keep_alive = "10m",
+          output = "req",
+          temperature = temperature,
+          num_ctx = max_ctx,
+          num_predict = max_tokens,
+          host = host,
+          seed = seed_s
+        )
+      }
       if (!is.null(api_key) && nzchar(api_key)) {
         req <- httr2::req_headers(req, "Authorization" = paste0("Bearer ", api_key))
       }
@@ -203,9 +218,11 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
         model = model,
         messages = messages,
         temperature = temperature,
-        num_ctx = max_ctx,
-        max_tokens = max_tokens
+        num_ctx = max_ctx
       )
+      if (!is.null(max_tokens)) {
+        body$max_tokens <- max_tokens
+      }
       if (!is.null(seed_s)) body$seed <- seed_s
       req <- httr2::request(url) |>
         httr2::req_body_json(body)
