@@ -59,6 +59,9 @@
 #' one retry. Default: 3.
 #' @param default_ctx Default context length if no context length is handed
 #' over. Default: 5120.
+#' @param max_tokens Cap length of response - forces the llm to stop generating 
+#' when max token length is reached. Use when llm fails and you suspect infinite
+#' generation of text is the cause.
 #'
 #' @returns
 #' A list with:
@@ -76,7 +79,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
                            model, host = NULL, api_key = NULL, backend = c("ollama","litellm"),
                            temperature = 0.2, seed = NULL,
                            retry_sleep = 30, max_retries = 3, default_ctx = 5120,
-                           retry_loop = TRUE) {
+                           retry_loop = TRUE, max_tokens = NULL) {
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
   max_ctx <- .pick_ctx_bracket(est_ctx_len, default_ctx = default_ctx)
@@ -171,6 +174,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
                            output = "req",
                            temperature = temperature,
                            num_ctx = max_ctx,
+                           num_predict = max_tokens,
                            host = host,
                            seed = seed_s)
       if (!is.null(api_key) && nzchar(api_key)) {
@@ -199,7 +203,8 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
         model = model,
         messages = messages,
         temperature = temperature,
-        num_ctx = max_ctx
+        num_ctx = max_ctx,
+        max_tokens = max_tokens
       )
       if (!is.null(seed_s)) body$seed <- seed_s
       req <- httr2::request(url) |>
@@ -341,6 +346,9 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' @param warmup Ollama sometimes acts non-deterministically even if you set a seed.
 #' to adjust to that you can hand over a warmup-value - the first cases will be run
 #' in a warm-up loop before the system runs the actual cases. Default: 0
+#' @param max_tokens Cap length of response - forces the llm to stop generating 
+#' when max token length is reached. Use when llm fails and you suspect infinite
+#' generation of text is the cause.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -360,7 +368,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
                     temperature = 0.2, seed = NULL,
                     retry_loop = TRUE,
                     retry_sleep = 30, max_retries = 3,
-                    default_ctx = 5120, warmup = 0) {
+                    default_ctx = 5120, warmup = 0, max_tokens = NULL) {
 
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -416,7 +424,8 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
         default_ctx = default_ctx,
         seed = seed,
         backend = backend,
-        expected_response_format = expected_response_format
+        expected_response_format = expected_response_format,
+        max_tokens = max_tokens
       )
       pb_warmup$tick()
     }
@@ -446,7 +455,8 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
       default_ctx = default_ctx,
       seed = seed,
       backend = backend,
-      expected_response_format = expected_response_format
+      expected_response_format = expected_response_format,
+      max_tokens = max_tokens
     )
     df$labels[i] <- result$label
     if(!is.null(explanations)){

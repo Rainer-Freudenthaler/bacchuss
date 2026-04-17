@@ -23,7 +23,8 @@ bacchuss_satyr(
   retry_sleep = 30,
   max_retries = 3,
   default_ctx = 5120,
-  retry_loop = TRUE
+  retry_loop = TRUE,
+  max_tokens = NULL
 )
 }
 \arguments{
@@ -85,6 +86,10 @@ over. Default: 5120.}
 text. If set TRUE, the results of this run will be discarded and the LLM will
 rerun with seed + 1. If set FALSE, keep result from loop - you can inspect the
 raw output to check what happened.}
+
+\item{max_tokens}{Cap length of response - forces the llm to stop generating 
+when max token length is reached. Use when llm fails and you suspect infinite
+generation of text is the cause.}
 }
 \value{
 A list with:

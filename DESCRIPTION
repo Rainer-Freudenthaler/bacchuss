@@ -1,7 +1,7 @@
 Package: bacchuss
 Type: Package
 Title: But Another Comfortable Chat Utility for Social Scientists
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: c(
     person(
       "Rainer", "Freudenthaler",
