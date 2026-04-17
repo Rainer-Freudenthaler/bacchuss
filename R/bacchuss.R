@@ -304,27 +304,27 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
         
         # explanation: capture everything up to the label field
         if (!is.null(explanations)) {
-          explanation <- stringr::str_match(
+          m_exp <- stringr::str_match(
             json_str,
             stringr::regex(
               '"explanation"\\s*:\\s*"(.*)"\\s*,\\s*"label"\\s*:',
               dotall = TRUE
             )
-          )[, 2]
-          
-          if (is.na(explanation)) explanation <- NA_character_
+          )
+          explanation <- if (nrow(m_exp) > 0) m_exp[, 2] else NA_character_
         } else {
           explanation <- NULL
         }
         
-        # label: take everything after "label:" until closing brace
-        label_raw <- stringr::str_match(
+        m_lab <- stringr::str_match(
           json_str,
           stringr::regex(
-            '"label"\\s*:\\s*(.*?)\\s*}\\s*$',
+            '"label"\\s*:\\s*(.*?)\\s*\\}\\s*$',
             dotall = TRUE
           )
-        )[, 2]
+        )
+        
+        label_raw <- if (nrow(m_lab) > 0) m_lab[, 2] else NA_character_
         
         if (is.na(label_raw) || label_raw == "null") {
           label <- NA_character_
