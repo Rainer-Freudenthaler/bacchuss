@@ -262,6 +262,15 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
       txt_clean,
       stringr::regex("```\\s*$", dotall = TRUE)
     )
+    
+    # repair the common malformed suffix: one extra closing brace
+    if (stringr::str_detect(txt_clean, stringr::regex("\\}\\s*\\}$", dotall = TRUE))) {
+      opens <- stringr::str_count(txt_clean, fixed("{"))
+      closes <- stringr::str_count(txt_clean, fixed("}"))
+      if (closes > opens) {
+        txt_clean <- sub("\\}\\s*$", "", txt_clean)
+      }
+    }
 
     json_str <- stringr::str_extract(
       txt_clean,
@@ -270,11 +279,17 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 
     if (!is.na(json_str)) {
       j <- tryCatch(jsonlite::fromJSON(json_str), error = function(e) NULL)
-      label <- if (!is.null(j$label)) as.character(j$label) else NA_character_
-      if (!is.null(explanations)) {
-        explanation <- if (!is.null(j$explanation)) as.character(j$explanation) else NA_character_
+      
+      if (is.null(j)) {
+        label <- NA_character_
+        explanation <- if (!is.null(explanations)) NA_character_ else NULL
       } else {
-        explanation <- NULL
+        label <- if (!is.null(j$label)) as.character(j$label) else NA_character_
+        if (!is.null(explanations)) {
+          explanation <- if (!is.null(j$explanation)) as.character(j$explanation) else NA_character_
+        } else {
+          explanation <- NULL
+        }
       }
     } else {
       label <- NA_character_
