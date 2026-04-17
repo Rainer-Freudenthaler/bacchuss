@@ -285,17 +285,55 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
     if (!is.na(json_str)) {
       j <- tryCatch(jsonlite::fromJSON(json_str), error = function(e) NULL)
       
-      if (is.null(j)) {
-        label <- NA_character_
-        explanation <- if (!is.null(explanations)) NA_character_ else NULL
-      } else {
+      if (!is.null(j)) {
+        # normal (valid JSON) path
         label <- if (!is.null(j$label)) as.character(j$label) else NA_character_
+        
         if (!is.null(explanations)) {
-          explanation <- if (!is.null(j$explanation)) as.character(j$explanation) else NA_character_
+          explanation <- if (!is.null(j$explanation)) {
+            as.character(j$explanation)
+          } else {
+            NA_character_
+          }
         } else {
           explanation <- NULL
         }
+        
+      } else {
+        # --- fallback for malformed JSON ---
+        
+        # explanation: capture everything up to the label field
+        if (!is.null(explanations)) {
+          explanation <- stringr::str_match(
+            json_str,
+            stringr::regex(
+              '"explanation"\\s*:\\s*"(.*)"\\s*,\\s*"label"\\s*:',
+              dotall = TRUE
+            )
+          )[, 2]
+          
+          if (is.na(explanation)) explanation <- NA_character_
+        } else {
+          explanation <- NULL
+        }
+        
+        # label: take everything after "label:" until closing brace
+        label_raw <- stringr::str_match(
+          json_str,
+          stringr::regex(
+            '"label"\\s*:\\s*(.*?)\\s*}\\s*$',
+            dotall = TRUE
+          )
+        )[, 2]
+        
+        if (is.na(label_raw) || label_raw == "null") {
+          label <- NA_character_
+        } else {
+          # strip surrounding quotes if present
+          label <- sub('^"|"$', '', label_raw)
+        }
       }
+      
     } else {
       label <- NA_character_
       explanation <- if (!is.null(explanations)) NA_character_ else NULL
