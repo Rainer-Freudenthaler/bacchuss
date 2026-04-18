@@ -270,8 +270,8 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
     
     # repair the common malformed suffix: one extra closing brace
     if (stringr::str_detect(txt_clean, stringr::regex("\\}\\s*\\}$", dotall = TRUE))) {
-      opens <- stringr::str_count(txt_clean, fixed("{"))
-      closes <- stringr::str_count(txt_clean, fixed("}"))
+      opens <- stringr::str_count(txt_clean, stringr::fixed("{"))
+      closes <- stringr::str_count(txt_clean, stringr::fixed("}"))
       if (closes > opens) {
         txt_clean <- sub("\\}\\s*$", "", txt_clean)
       }
