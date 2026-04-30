@@ -65,18 +65,13 @@
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
-#' @param reasoning Logical. Whether to request reasoning from the model.
+#' @param reasoning Whether to request reasoning from the model.
+#'   One of FALSE, TRUE, "low", "medium", or "high".
 #'   Defaults to FALSE.
-#'
-#'   If TRUE, reasoning is requested where supported by the backend
-#'   (e.g. via `think = TRUE` for Ollama or `reasoning_effort` for LiteLLM).
-#'
-#'   If FALSE, no explicit reasoning parameter is sent. Some models may still
-#'   produce reasoning by default.
-#'
-#'   Note that reasoning behavior is model- and backend-dependent and not
-#'   guaranteed. The `raw_output` field contains reasoning-stripped output,
-#'   while any detected reasoning is returned in `reasoning_output`.
+#'   For Ollama, this is sent as `think`.
+#'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
+#'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
+#'   Reasoning behavior is model- and backend-dependent and not guaranteed.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -109,6 +104,12 @@ briseus <- function(df,
   if (!is.data.frame(df)) stop("`df` must be a data frame.", call. = FALSE)
   if (!is.numeric(n_runs) || length(n_runs) != 1 || is.na(n_runs) || n_runs < 1) {
     stop("`n_runs` must be a single integer >= 1.", call. = FALSE)
+  }
+  
+  if (!(is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) &&
+      !(is.character(reasoning) && length(reasoning) == 1 &&
+        reasoning %in% c("low", "medium", "high"))) {
+    stop("`reasoning` must be one of FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
   }
   n_runs <- as.integer(n_runs)
   
@@ -269,18 +270,13 @@ briseus <- function(df,
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
-#' @param reasoning Logical. Whether to request reasoning from the model.
+#' @param reasoning Whether to request reasoning from the model.
+#'   One of FALSE, TRUE, "low", "medium", or "high".
 #'   Defaults to FALSE.
-#'
-#'   If TRUE, reasoning is requested where supported by the backend
-#'   (e.g. via `think = TRUE` for Ollama or `reasoning_effort` for LiteLLM).
-#'
-#'   If FALSE, no explicit reasoning parameter is sent. Some models may still
-#'   produce reasoning by default.
-#'
-#'   Note that reasoning behavior is model- and backend-dependent and not
-#'   guaranteed. The `raw_output` field contains reasoning-stripped output,
-#'   while any detected reasoning is returned in `reasoning_output`.
+#'   For Ollama, this is sent as `think`.
+#'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
+#'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
+#'   Reasoning behavior is model- and backend-dependent and not guaranteed.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -327,6 +323,12 @@ isodaetes <- function(df,
   if (!is.numeric(agreement_threshold) || length(agreement_threshold) != 1 ||
       is.na(agreement_threshold) || agreement_threshold <= 0 || agreement_threshold > 1) {
     stop("`agreement_threshold` must be a single number in (0, 1].", call. = FALSE)
+  }
+  
+  if (!(is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) &&
+      !(is.character(reasoning) && length(reasoning) == 1 &&
+        reasoning %in% c("low", "medium", "high"))) {
+    stop("`reasoning` must be one of FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
   }
   
   if (is.null(jury_append_prompt)) {
@@ -530,18 +532,13 @@ isodaetes <- function(df,
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
-#' @param reasoning Logical. Whether to request reasoning from the model.
+#' @param reasoning Whether to request reasoning from the model.
+#'   One of FALSE, TRUE, "low", "medium", or "high".
 #'   Defaults to FALSE.
-#'
-#'   If TRUE, reasoning is requested where supported by the backend
-#'   (e.g. via `think = TRUE` for Ollama or `reasoning_effort` for LiteLLM).
-#'
-#'   If FALSE, no explicit reasoning parameter is sent. Some models may still
-#'   produce reasoning by default.
-#'
-#'   Note that reasoning behavior is model- and backend-dependent and not
-#'   guaranteed. The `raw_output` field contains reasoning-stripped output,
-#'   while any detected reasoning is returned in `reasoning_output`.
+#'   For Ollama, this is sent as `think`.
+#'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
+#'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
+#'   Reasoning behavior is model- and backend-dependent and not guaranteed.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -588,6 +585,12 @@ liknites <- function(instructions,
   
   if (!is.numeric(n_runs) || length(n_runs) != 1 || is.na(n_runs) || n_runs < 1) {
     stop("`n_runs` must be a single integer >= 1.", call. = FALSE)
+  }
+  
+  if (!(is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) &&
+      !(is.character(reasoning) && length(reasoning) == 1 &&
+        reasoning %in% c("low", "medium", "high"))) {
+    stop("`reasoning` must be one of FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
   }
   n_runs <- as.integer(n_runs)
   
