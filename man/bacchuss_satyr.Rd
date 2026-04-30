@@ -92,7 +92,18 @@ raw output to check what happened.}
 when max token length is reached. Use when llm fails and you suspect infinite
 generation of text is the cause.}
 
-\item{reasoning}{If the model allows it, use reasoning. FALSE by default.}
+\item{reasoning}{Logical. Whether to request reasoning from the model.
+  Defaults to FALSE.
+
+  If TRUE, reasoning is requested where supported by the backend
+  (e.g. via `think = TRUE` for Ollama or `reasoning_effort` for LiteLLM).
+
+  If FALSE, no explicit reasoning parameter is sent. Some models may still
+  produce reasoning by default.
+
+  Note that reasoning behavior is model- and backend-dependent and not
+  guaranteed. The `raw_output` field contains reasoning-stripped output,
+  while any detected reasoning is returned in `reasoning_output`.}
 }
 \value{
 A list with:

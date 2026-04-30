@@ -111,7 +111,18 @@
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
-#' @param reasoning If the model allows it, use reasoning. FALSE by default.
+#' @param reasoning Logical. Whether to request reasoning from the model.
+#'   Defaults to FALSE.
+#'
+#'   If TRUE, reasoning is requested where supported by the backend
+#'   (e.g. via `think = TRUE` for Ollama or `reasoning_effort` for LiteLLM).
+#'
+#'   If FALSE, no explicit reasoning parameter is sent. Some models may still
+#'   produce reasoning by default.
+#'
+#'   Note that reasoning behavior is model- and backend-dependent and not
+#'   guaranteed. The `raw_output` field contains reasoning-stripped output,
+#'   while any detected reasoning is returned in `reasoning_output`.
 #'
 #' @returns
 #' A list with:
@@ -230,8 +241,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
           temperature = temperature,
           num_ctx = max_ctx,
           host = host,
-          seed = seed_s,
-          think = reasoning
+          seed = seed_s
         )
       } else {
         req <- ollamar::chat(
@@ -243,8 +253,13 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
           num_ctx = max_ctx,
           num_predict = max_tokens,
           host = host,
-          seed = seed_s,
-          think = reasoning
+          seed = seed_s
+        )
+      }
+      if (isTRUE(reasoning)) {
+        req <- tryCatch(
+          httr2::req_body_json_modify(req, think = TRUE),
+          error = function(e) req
         )
       }
       if (!is.null(api_key) && nzchar(api_key)) {
@@ -265,7 +280,13 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
         !is.null(body_json$eval_count)
       
       if (!is.null(res) && (ok_tokens || !retry_loop)) {
-        reasoning_res <- .extract_reasoning(body_json$message, res)
+        msg <- if (!is.null(body_json) && !is.null(body_json$message)) {
+          body_json$message
+        } else {
+          list()
+        }
+        
+        reasoning_res <- .extract_reasoning(msg, res)
         response_text <- reasoning_res$cleaned_output
         reasoning_output <- reasoning_res$reasoning_output
         if (ok_tokens) {
@@ -301,7 +322,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
         httr2::resp_body_json(resp)
       }, error = function(e) NULL)
 
-      if (!is.null(j)) {
+      if (!is.null(j) && length(j$choices) > 0) {
         msg <- j$choices[[1]]$message
         reasoning_res <- .extract_reasoning(msg, msg$content)
         
@@ -489,7 +510,18 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
-#' @param reasoning If the model allows it, use reasoning. FALSE by default.
+#' @param reasoning Logical. Whether to request reasoning from the model.
+#'   Defaults to FALSE.
+#'
+#'   If TRUE, reasoning is requested where supported by the backend
+#'   (e.g. via `think = TRUE` for Ollama or `reasoning_effort` for LiteLLM).
+#'
+#'   If FALSE, no explicit reasoning parameter is sent. Some models may still
+#'   produce reasoning by default.
+#'
+#'   Note that reasoning behavior is model- and backend-dependent and not
+#'   guaranteed. The `raw_output` field contains reasoning-stripped output,
+#'   while any detected reasoning is returned in `reasoning_output`.
 #'
 #' @returns
 #' A data frame with added columns:
