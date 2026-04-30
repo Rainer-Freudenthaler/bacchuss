@@ -23,7 +23,9 @@ liknites(
   retry_sleep = 30,
   max_retries = 3,
   default_ctx = 5120,
-  verbose = TRUE
+  verbose = TRUE,
+  max_tokens = NULL,
+  reasoning = FALSE
 )
 }
 \arguments{
@@ -83,6 +85,12 @@ one retry. Default: 3.}
 over. Default: 5120.}
 
 \item{verbose}{If update messages are sent. Default: TRUE.}
+
+\item{max_tokens}{Cap length of response - forces the llm to stop generating 
+when max token length is reached. Use when llm fails and you suspect infinite
+generation of text is the cause.}
+
+\item{reasoning}{If the model allows it, use reasoning. FALSE by default.}
 }
 \value{
 A data frame with added columns:

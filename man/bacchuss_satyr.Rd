@@ -24,7 +24,8 @@ bacchuss_satyr(
   max_retries = 3,
   default_ctx = 5120,
   retry_loop = TRUE,
-  max_tokens = NULL
+  max_tokens = NULL,
+  reasoning = FALSE
 )
 }
 \arguments{
@@ -90,16 +91,19 @@ raw output to check what happened.}
 \item{max_tokens}{Cap length of response - forces the llm to stop generating 
 when max token length is reached. Use when llm fails and you suspect infinite
 generation of text is the cause.}
+
+\item{reasoning}{If the model allows it, use reasoning. FALSE by default.}
 }
 \value{
 A list with:
 \describe{
   \item{label}{Annotated label for the text.}
   \item{explanation}{Explanation when requested.}
-  \item{raw_output}{Full LLM output.}
+  \item{raw_output}{Reasoning-stripped LLM output used for parsing.}
   \item{max_context_used}{Context sent to the model.}
   \item{tokens_prompt}{Prompt token count.}
   \item{tokens_response}{Response token count.}
+  \item{reasoning_output}{Reasoning output labelled by source - by default we expect NA.}
 }
 }
 \description{

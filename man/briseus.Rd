@@ -26,7 +26,9 @@ briseus(
   retry_sleep = 30,
   max_retries = 3,
   default_ctx = 5120,
-  warmup = 0
+  warmup = 0,
+  max_tokens = NULL,
+  reasoning = FALSE
 )
 }
 \arguments{
@@ -99,6 +101,12 @@ over. Default: 5120.}
 \item{warmup}{Ollama sometimes acts non-deterministically even if you set a seed.
 to adjust to that you can hand over a warmup-value - the first cases will be run
 in a warm-up loop before the system runs the actual cases. Default: 0}
+
+\item{max_tokens}{Cap length of response - forces the llm to stop generating 
+when max token length is reached. Use when llm fails and you suspect infinite
+generation of text is the cause.}
+
+\item{reasoning}{If the model allows it, use reasoning. FALSE by default.}
 }
 \value{
 A data frame with added columns:

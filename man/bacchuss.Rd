@@ -26,7 +26,8 @@ bacchuss(
   max_retries = 3,
   default_ctx = 5120,
   warmup = 0,
-  max_tokens = NULL
+  max_tokens = NULL,
+  reasoning = FALSE
 )
 }
 \arguments{
@@ -102,16 +103,19 @@ in a warm-up loop before the system runs the actual cases. Default: 0}
 \item{max_tokens}{Cap length of response - forces the llm to stop generating 
 when max token length is reached. Use when llm fails and you suspect infinite
 generation of text is the cause.}
+
+\item{reasoning}{If the model allows it, use reasoning. FALSE by default.}
 }
 \value{
 A data frame with added columns:
 \describe{
   \item{labels}{Annotated labels.}
   \item{explanations}{Explanations when requested.}
-  \item{raw_output}{Full LLM output per row.}
+  \item{raw_output}{Reasoning-stripped LLM output used for parsing.}
   \item{max_context_used}{Context used.}
   \item{tokens_prompt}{Prompt tokens.}
   \item{tokens_response}{Response tokens.}
+  \item{reasoning_output}{Reasoning output labelled by source - by default we expect NA.}
 }
 }
 \description{

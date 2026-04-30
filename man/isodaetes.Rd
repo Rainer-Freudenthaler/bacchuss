@@ -32,7 +32,9 @@ isodaetes(
   jury_temperature = 0,
   jury_seed = NULL,
   jury_reminder =
-    "Decide the best single label based strictly on the coding instructions. Output only in the required format."
+    "Decide the best single label based strictly on the coding instructions. Output only in the required format.",
+  max_tokens = NULL,
+  reasoning = FALSE
 )
 }
 \arguments{
@@ -117,6 +119,12 @@ If NULL uses english default.}
 \item{jury_seed}{Seed for the jury call. Default: NULL}
 
 \item{jury_reminder}{Reminder to append to jury call - default is in English.}
+
+\item{max_tokens}{Cap length of response - forces the llm to stop generating 
+when max token length is reached. Use when llm fails and you suspect infinite
+generation of text is the cause.}
+
+\item{reasoning}{If the model allows it, use reasoning. FALSE by default.}
 }
 \value{
 A data frame with added columns:

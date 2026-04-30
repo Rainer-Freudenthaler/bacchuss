@@ -1,4 +1,53 @@
-
+.extract_reasoning <- function(message, raw_text) {
+  
+  reasoning_parts <- character()
+  
+  if (is.null(raw_text) || is.na(raw_text)) {
+    raw_text <- ""
+  }
+  
+  add_reasoning <- function(source, text) {
+    if (!is.null(text) && !is.na(text) && nzchar(stringr::str_trim(text))) {
+      reasoning_parts <<- c(
+        reasoning_parts,
+        paste0("[", source, "]\n", stringr::str_trim(text))
+      )
+    }
+  }
+  
+  add_reasoning("message.thinking", message$thinking)
+  add_reasoning("message.reasoning", message$reasoning)
+  add_reasoning("message.reasoning_content", message$reasoning_content)
+  
+  matches <- stringr::str_match_all(
+    raw_text,
+    stringr::regex("<think>(.*?)</think>", dotall = TRUE)
+  )[[1]]
+  
+  if (!is.null(matches) && nrow(matches) > 0) {
+    for (i in seq_len(nrow(matches))) {
+      add_reasoning(paste0("tagged:<think>:", i), matches[i, 2])
+    }
+  }
+  
+  reasoning_output <- if (length(reasoning_parts) > 0) {
+    paste(reasoning_parts, collapse = "\n\n")
+  } else {
+    NA_character_
+  }
+  
+  cleaned <- stringr::str_remove_all(
+    raw_text,
+    stringr::regex("<think>.*?</think>", dotall = TRUE)
+  )
+  
+  reasoning_output <- if (!is.na(reasoning_output)) stringr::str_trim(reasoning_output) else reasoning_output
+  
+  list(
+    reasoning_output = reasoning_output,
+    cleaned_output = stringr::str_trim(cleaned)
+  )
+}
 
 .pick_ctx_bracket <- function(est, brackets = c(4096,5120,6144,7168,8192,10240,15360,20480,40960), default_ctx) {
   if (is.null(est) || is.na(est) || length(est)==0) return(default_ctx)
@@ -62,16 +111,18 @@
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
+#' @param reasoning If the model allows it, use reasoning. FALSE by default.
 #'
 #' @returns
 #' A list with:
 #' \describe{
 #'   \item{label}{Annotated label for the text.}
 #'   \item{explanation}{Explanation when requested.}
-#'   \item{raw_output}{Full LLM output.}
+#'   \item{raw_output}{Reasoning-stripped LLM output used for parsing.}
 #'   \item{max_context_used}{Context sent to the model.}
 #'   \item{tokens_prompt}{Prompt token count.}
 #'   \item{tokens_response}{Response token count.}
+#'   \item{reasoning_output}{Reasoning output labelled by source - by default we expect NA.}
 #' }
 #' @export
 bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, codes = NULL,
@@ -79,7 +130,8 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
                            model, host = NULL, api_key = NULL, backend = c("ollama","litellm"),
                            temperature = 0.2, seed = NULL,
                            retry_sleep = 30, max_retries = 3, default_ctx = 5120,
-                           retry_loop = TRUE, max_tokens = NULL) {
+                           retry_loop = TRUE, max_tokens = NULL,
+                           reasoning = FALSE) {
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
   max_ctx <- .pick_ctx_bracket(est_ctx_len, default_ctx = default_ctx)
@@ -165,6 +217,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
   tokens_prompt <- NA
   tokens_response <- NA
   resp <- NULL
+  reasoning_output <- NA_character_
 
   for (i in seq_len(max_retries)) {
     if (backend == "ollama") {
@@ -177,7 +230,8 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
           temperature = temperature,
           num_ctx = max_ctx,
           host = host,
-          seed = seed_s
+          seed = seed_s,
+          think = reasoning
         )
       } else {
         req <- ollamar::chat(
@@ -189,7 +243,8 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
           num_ctx = max_ctx,
           num_predict = max_tokens,
           host = host,
-          seed = seed_s
+          seed = seed_s,
+          think = reasoning
         )
       }
       if (!is.null(api_key) && nzchar(api_key)) {
@@ -210,7 +265,9 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
         !is.null(body_json$eval_count)
       
       if (!is.null(res) && (ok_tokens || !retry_loop)) {
-        response_text <- res
+        reasoning_res <- .extract_reasoning(body_json$message, res)
+        response_text <- reasoning_res$cleaned_output
+        reasoning_output <- reasoning_res$reasoning_output
         if (ok_tokens) {
           tokens_prompt <- body_json$prompt_eval_count
           tokens_response <- body_json$eval_count
@@ -228,6 +285,9 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
       if (!is.null(max_tokens)) {
         body$max_tokens <- max_tokens
       }
+      if (isTRUE(reasoning)) {
+        body$reasoning_effort <- "medium"
+      }
       if (!is.null(seed_s)) body$seed <- seed_s
       req <- httr2::request(url) |>
         httr2::req_body_json(body)
@@ -242,7 +302,11 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
       }, error = function(e) NULL)
 
       if (!is.null(j)) {
-        response_text <- j$choices[[1]]$message$content
+        msg <- j$choices[[1]]$message
+        reasoning_res <- .extract_reasoning(msg, msg$content)
+        
+        response_text <- reasoning_res$cleaned_output
+        reasoning_output <- reasoning_res$reasoning_output
         tokens_prompt <- j$usage$prompt_tokens
         tokens_response <- j$usage$completion_tokens
         break
@@ -352,6 +416,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
     label = stringr::str_trim(label),
     explanation = if (is.null(explanations)) NULL else stringr::str_trim(explanation),
     raw_output = response_text,
+    reasoning_output = reasoning_output,
     max_context_used = max_ctx,
     tokens_prompt = tokens_prompt,
     tokens_response = tokens_response
@@ -424,16 +489,18 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
+#' @param reasoning If the model allows it, use reasoning. FALSE by default.
 #'
 #' @returns
 #' A data frame with added columns:
 #' \describe{
 #'   \item{labels}{Annotated labels.}
 #'   \item{explanations}{Explanations when requested.}
-#'   \item{raw_output}{Full LLM output per row.}
+#'   \item{raw_output}{Reasoning-stripped LLM output used for parsing.}
 #'   \item{max_context_used}{Context used.}
 #'   \item{tokens_prompt}{Prompt tokens.}
 #'   \item{tokens_response}{Response tokens.}
+#'   \item{reasoning_output}{Reasoning output labelled by source - by default we expect NA.}
 #' }
 #' @export
 bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_length",
@@ -443,7 +510,8 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
                     temperature = 0.2, seed = NULL,
                     retry_loop = TRUE,
                     retry_sleep = 30, max_retries = 3,
-                    default_ctx = 5120, warmup = 0, max_tokens = NULL) {
+                    default_ctx = 5120, warmup = 0, max_tokens = NULL,
+                    reasoning = FALSE) {
 
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -463,6 +531,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
   df$labels <- NA_character_
   if (!is.null(explanations)) df$explanations <- NA_character_
   df$raw_output <- NA_character_
+  df$reasoning_output <- NA_character_
   df$max_context_used <- NA_integer_
   df$tokens_prompt <- NA_integer_
   df$tokens_response <- NA_integer_
@@ -500,7 +569,8 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
         seed = seed,
         backend = backend,
         expected_response_format = expected_response_format,
-        max_tokens = max_tokens
+        max_tokens = max_tokens,
+        reasoning = reasoning
       )
       pb_warmup$tick()
     }
@@ -531,13 +601,15 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
       seed = seed,
       backend = backend,
       expected_response_format = expected_response_format,
-      max_tokens = max_tokens
+      max_tokens = max_tokens,
+      reasoning = reasoning
     )
     df$labels[i] <- result$label
     if(!is.null(explanations)){
       df$explanations[i] <- result$explanation
     }
     df$raw_output[i] <- result$raw_output
+    df$reasoning_output[i] <- result$reasoning_output
     df$max_context_used[i] <- result$max_context_used
     df$tokens_prompt[i] <- result$tokens_prompt
     df$tokens_response[i] <- result$tokens_response

@@ -62,6 +62,10 @@
 #' @param warmup Ollama sometimes acts non-deterministically even if you set a seed.
 #' to adjust to that you can hand over a warmup-value - the first cases will be run
 #' in a warm-up loop before the system runs the actual cases. Default: 0
+#' @param max_tokens Cap length of response - forces the llm to stop generating 
+#' when max token length is reached. Use when llm fails and you suspect infinite
+#' generation of text is the cause.
+#' @param reasoning If the model allows it, use reasoning. FALSE by default.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -84,7 +88,9 @@ briseus <- function(df,
                     temperature = 0.2, seed = NULL,
                     retry_loop = TRUE,
                     retry_sleep = 30, max_retries = 3,
-                    default_ctx = 5120, warmup = 0) {
+                    default_ctx = 5120, warmup = 0,
+                    max_tokens = NULL,
+                    reasoning = FALSE) {
   
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -126,7 +132,9 @@ briseus <- function(df,
       retry_sleep = retry_sleep,
       max_retries = max_retries,
       default_ctx = default_ctx,
-      warmup = warmup
+      warmup = warmup,
+      max_tokens = max_tokens,
+      reasoning = reasoning
     )
     
     labels_mat[, r] <- res_r$labels
@@ -247,6 +255,10 @@ briseus <- function(df,
 #' @param jury_temperature Temperature for the jury call. Default: 0
 #' @param jury_seed Seed for the jury call. Default: NULL
 #' @param jury_reminder Reminder to append to jury call - default is in English.
+#' @param max_tokens Cap length of response - forces the llm to stop generating 
+#' when max token length is reached. Use when llm fails and you suspect infinite
+#' generation of text is the cause.
+#' @param reasoning If the model allows it, use reasoning. FALSE by default.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -277,7 +289,9 @@ isodaetes <- function(df,
                       jury_append_prompt = NULL,
                       jury_temperature = 0.0,
                       jury_seed = NULL,
-                      jury_reminder = "Decide the best single label based strictly on the coding instructions. Output only in the required format.") {
+                      jury_reminder = "Decide the best single label based strictly on the coding instructions. Output only in the required format.",
+                      max_tokens = NULL,
+                      reasoning = FALSE) {
   
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -333,7 +347,9 @@ isodaetes <- function(df,
       retry_sleep = retry_sleep,
       max_retries = max_retries,
       default_ctx = default_ctx,
-      warmup = warmup
+      warmup = warmup,
+      max_tokens = max_tokens,
+      reasoning = reasoning
     )
     
     labels_mat[, r] <- res_r$labels
@@ -427,7 +443,9 @@ isodaetes <- function(df,
         retry_sleep = retry_sleep,
         max_retries = max_retries,
         default_ctx = default_ctx,
-        expected_response_format = expected_response_format
+        expected_response_format = expected_response_format,
+        max_tokens = max_tokens,
+        reasoning = reasoning
       )
       
       out$final_label[i] <- jury_res$label
@@ -487,6 +505,10 @@ isodaetes <- function(df,
 #' @param default_ctx Default context length if no context length is handed
 #' over. Default: 5120.
 #' @param verbose If update messages are sent. Default: TRUE.
+#' @param max_tokens Cap length of response - forces the llm to stop generating 
+#' when max token length is reached. Use when llm fails and you suspect infinite
+#' generation of text is the cause.
+#' @param reasoning If the model allows it, use reasoning. FALSE by default.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -516,7 +538,9 @@ liknites <- function(instructions,
                                   retry_loop = TRUE,
                                   retry_sleep = 30, max_retries = 3,
                                   default_ctx = 5120,
-                                  verbose = TRUE) {
+                                  verbose = TRUE,
+                     max_tokens = NULL,
+                     reasoning = FALSE) {
   
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -599,7 +623,9 @@ liknites <- function(instructions,
         retry_loop = retry_loop,
         retry_sleep = retry_sleep,
         max_retries = max_retries,
-        default_ctx = default_ctx
+        default_ctx = default_ctx,
+        max_tokens = max_tokens,
+        reasoning = reasoning
       )
       
       pred_labels[j, r] <- res$label
