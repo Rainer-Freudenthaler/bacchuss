@@ -66,12 +66,13 @@
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
 #' @param reasoning Whether to request reasoning from the model.
-#'   One of FALSE, TRUE, "low", "medium", or "high".
+#'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
 #'   Defaults to FALSE.
 #'   For Ollama, this is sent as `think`.
 #'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
+#'   Use reasoning = NULL to omit the parameter if needed.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -106,11 +107,7 @@ briseus <- function(df,
     stop("`n_runs` must be a single integer >= 1.", call. = FALSE)
   }
   
-  if (!(is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) &&
-      !(is.character(reasoning) && length(reasoning) == 1 &&
-        reasoning %in% c("low", "medium", "high"))) {
-    stop("`reasoning` must be one of FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
-  }
+  .validate_reasoning(reasoning)
   n_runs <- as.integer(n_runs)
   
   # store run outputs
@@ -271,12 +268,13 @@ briseus <- function(df,
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
 #' @param reasoning Whether to request reasoning from the model.
-#'   One of FALSE, TRUE, "low", "medium", or "high".
+#'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
 #'   Defaults to FALSE.
 #'   For Ollama, this is sent as `think`.
 #'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
+#'   Use reasoning = NULL to omit the parameter if needed.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -325,11 +323,7 @@ isodaetes <- function(df,
     stop("`agreement_threshold` must be a single number in (0, 1].", call. = FALSE)
   }
   
-  if (!(is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) &&
-      !(is.character(reasoning) && length(reasoning) == 1 &&
-        reasoning %in% c("low", "medium", "high"))) {
-    stop("`reasoning` must be one of FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
-  }
+  .validate_reasoning(reasoning)
   
   if (is.null(jury_append_prompt)) {
     jury_append_prompt <- paste0(
@@ -533,12 +527,13 @@ isodaetes <- function(df,
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
 #' @param reasoning Whether to request reasoning from the model.
-#'   One of FALSE, TRUE, "low", "medium", or "high".
+#'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
 #'   Defaults to FALSE.
 #'   For Ollama, this is sent as `think`.
 #'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
+#'   Use reasoning = NULL to omit the parameter if needed.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -587,11 +582,7 @@ liknites <- function(instructions,
     stop("`n_runs` must be a single integer >= 1.", call. = FALSE)
   }
   
-  if (!(is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) &&
-      !(is.character(reasoning) && length(reasoning) == 1 &&
-        reasoning %in% c("low", "medium", "high"))) {
-    stop("`reasoning` must be one of FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
-  }
+  .validate_reasoning(reasoning)
   n_runs <- as.integer(n_runs)
   
   # normalize NAs like your main code does

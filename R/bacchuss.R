@@ -1,3 +1,15 @@
+.validate_reasoning <- function(reasoning) {
+  if (is.null(reasoning)) return(invisible(reasoning))
+  
+  if ((is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) ||
+      (is.character(reasoning) && length(reasoning) == 1 &&
+       reasoning %in% c("low", "medium", "high"))) {
+    return(invisible(reasoning))
+  }
+  
+  stop("`reasoning` must be NULL, FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
+}
+
 .extract_reasoning <- function(message, raw_text) {
   
   reasoning_parts <- character()
@@ -112,12 +124,13 @@
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
 #' @param reasoning Whether to request reasoning from the model.
-#'   One of FALSE, TRUE, "low", "medium", or "high".
+#'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
 #'   Defaults to FALSE.
 #'   For Ollama, this is sent as `think`.
 #'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
+#'   Use reasoning = NULL to omit the parameter if needed.
 #'
 #' @returns
 #' A list with:
@@ -164,11 +177,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
     stop("`host` must be set for backend = 'litellm'.", call. = FALSE)
   }
   
-  if (!(is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) &&
-      !(is.character(reasoning) && length(reasoning) == 1 &&
-        reasoning %in% c("low", "medium", "high"))) {
-    stop("`reasoning` must be one of FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
-  }
+  .validate_reasoning(reasoning)
 
 
   # normalize examples, explanations and codes
@@ -257,7 +266,9 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
           seed = seed_s
         )
       }
-      req <- httr2::req_body_json_modify(req, think = reasoning)
+      if (!is.null(reasoning)) {
+        req <- httr2::req_body_json_modify(req, think = reasoning)
+      }
       if (!is.null(api_key) && nzchar(api_key)) {
         req <- httr2::req_headers(req, "Authorization" = paste0("Bearer ", api_key))
       }
@@ -302,12 +313,14 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
       if (!is.null(max_tokens)) {
         body$max_tokens <- max_tokens
       }
-      if (identical(reasoning, FALSE)) {
-        body$reasoning_effort <- "none"
-      } else if (identical(reasoning, TRUE)) {
-        body$reasoning_effort <- "medium"
-      } else {
-        body$reasoning_effort <- reasoning
+      if (!is.null(reasoning)) {
+        if (identical(reasoning, FALSE)) {
+          body$reasoning_effort <- "none"
+        } else if (identical(reasoning, TRUE)) {
+          body$reasoning_effort <- "medium"
+        } else {
+          body$reasoning_effort <- reasoning
+        }
       }
       
       if (!is.null(seed_s)) body$seed <- seed_s
@@ -512,12 +525,13 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' when max token length is reached. Use when llm fails and you suspect infinite
 #' generation of text is the cause.
 #' @param reasoning Whether to request reasoning from the model.
-#'   One of FALSE, TRUE, "low", "medium", or "high".
+#'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
 #'   Defaults to FALSE.
 #'   For Ollama, this is sent as `think`.
 #'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
+#'   Use reasoning = NULL to omit the parameter if needed.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -556,11 +570,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
     stop("Input dataframe has 0 rows.", call. = FALSE)
   }
   
-  if (!(is.logical(reasoning) && length(reasoning) == 1 && !is.na(reasoning)) &&
-      !(is.character(reasoning) && length(reasoning) == 1 &&
-        reasoning %in% c("low", "medium", "high"))) {
-    stop("`reasoning` must be one of FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
-  }
+  .validate_reasoning(reasoning)
 
   df$labels <- NA_character_
   if (!is.null(explanations)) df$explanations <- NA_character_

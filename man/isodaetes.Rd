@@ -125,12 +125,13 @@ when max token length is reached. Use when llm fails and you suspect infinite
 generation of text is the cause.}
 
 \item{reasoning}{Whether to request reasoning from the model.
-One of FALSE, TRUE, "low", "medium", or "high".
+One of FALSE, TRUE, NULL, "low", "medium", or "high".
 Defaults to FALSE.
 For Ollama, this is sent as `think`.
 For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
 TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
-Reasoning behavior is model- and backend-dependent and not guaranteed.}
+Reasoning behavior is model- and backend-dependent and not guaranteed.
+Use reasoning = NULL to omit the parameter if needed.}
 }
 \value{
 A data frame with added columns:
