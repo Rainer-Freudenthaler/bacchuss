@@ -25,7 +25,8 @@ bacchuss_satyr(
   default_ctx = 5120,
   retry_loop = TRUE,
   max_tokens = NULL,
-  reasoning = FALSE
+  reasoning = FALSE,
+  response_format_json = NULL
 )
 }
 \arguments{
@@ -100,6 +101,9 @@ For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
 TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 Reasoning behavior is model- and backend-dependent and not guaranteed.
 Use reasoning = NULL to omit the parameter if needed.}
+
+\item{response_format_json}{An optional json object that limits the response format of 
+the llm output. If omitted, you might have to clean up labels.}
 }
 \value{
 A list with:

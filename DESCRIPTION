@@ -1,7 +1,7 @@
 Package: bacchuss
 Type: Package
 Title: But Another Comfortable Chat Utility for Social Scientists
-Version: 0.1.10
+Version: 0.1.11
 Authors@R: c(
     person(
       "Rainer", "Freudenthaler",
@@ -17,7 +17,6 @@ Description: This package is aimed at social scientists with few programming ski
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.3
 Imports: 
     ollamar (>= 1.2.2),
     progress (>= 1.2.3),
@@ -31,3 +30,4 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0

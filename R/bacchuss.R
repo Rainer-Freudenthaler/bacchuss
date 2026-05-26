@@ -10,6 +10,14 @@
   stop("`reasoning` must be NULL, FALSE, TRUE, 'low', 'medium', or 'high'.", call. = FALSE)
 }
 
+.validate_response_format_json <- function(response_format_json) {
+  if (is.null(response_format_json)) return(invisible(NULL))
+  if (!is.list(response_format_json)) {
+    stop("`response_format_json` must be NULL or a JSON/list schema object.", call. = FALSE)
+  }
+  invisible(response_format_json)
+}
+
 .extract_reasoning <- function(message, raw_text) {
   
   reasoning_parts <- character()
@@ -131,6 +139,8 @@
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
 #'   Use reasoning = NULL to omit the parameter if needed.
+#' @param response_format_json An optional json object that limits the response format of 
+#' the llm output. If omitted, you might have to clean up labels.
 #'
 #' @returns
 #' A list with:
@@ -150,7 +160,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
                            temperature = 0.2, seed = NULL,
                            retry_sleep = 30, max_retries = 3, default_ctx = 5120,
                            retry_loop = TRUE, max_tokens = NULL,
-                           reasoning = FALSE) {
+                           reasoning = FALSE, response_format_json = NULL) {
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
   max_ctx <- .pick_ctx_bracket(est_ctx_len, default_ctx = default_ctx)
@@ -178,6 +188,12 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
   }
   
   .validate_reasoning(reasoning)
+  
+  .validate_response_format_json(response_format_json)
+  
+  if (!is.null(response_format_json) && expected_response_format != "json") {
+    stop("`response_format_json` requires `expected_response_format = 'json'.", call. = FALSE)
+  }
 
 
   # normalize examples, explanations and codes
@@ -272,6 +288,10 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
       if (!is.null(api_key) && nzchar(api_key)) {
         req <- httr2::req_headers(req, "Authorization" = paste0("Bearer ", api_key))
       }
+      if (!is.null(response_format_json)) {
+        req <- httr2::req_body_json_modify(req, format = response_format_json)
+      }
+      
       res <- tryCatch({
         resp <- httr2::req_perform(req)
         ollamar::resp_process(resp, output = "text")
@@ -321,6 +341,9 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
         } else {
           body$reasoning_effort <- reasoning
         }
+      }
+      if (!is.null(response_format_json)) {
+        body$response_format <- response_format_json
       }
       
       if (!is.null(seed_s)) body$seed <- seed_s
@@ -532,6 +555,8 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
 #'   Use reasoning = NULL to omit the parameter if needed.
+#' @param response_format_json An optional json object that limits the response format of 
+#' the llm output. If omitted, you might have to clean up labels.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -553,7 +578,8 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
                     retry_loop = TRUE,
                     retry_sleep = 30, max_retries = 3,
                     default_ctx = 5120, warmup = 0, max_tokens = NULL,
-                    reasoning = FALSE) {
+                    reasoning = FALSE,
+                    response_format_json = NULL) {
 
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -571,6 +597,18 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
   }
   
   .validate_reasoning(reasoning)
+  
+  .validate_response_format_json(response_format_json)
+  
+  if (!is.null(response_format_json) && expected_response_format != "json") {
+    stop("`response_format_json` requires `expected_response_format = 'json'.", call. = FALSE)
+  }
+  
+  if (is.null(response_format_json)) {
+    message("Message: No response json selected.")
+  } else {
+    message("Message: Response json selected.")
+  }
 
   df$labels <- NA_character_
   if (!is.null(explanations)) df$explanations <- NA_character_
@@ -614,7 +652,8 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
         backend = backend,
         expected_response_format = expected_response_format,
         max_tokens = max_tokens,
-        reasoning = reasoning
+        reasoning = reasoning,
+        response_format_json = response_format_json
       )
       pb_warmup$tick()
     }
@@ -646,7 +685,8 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
       backend = backend,
       expected_response_format = expected_response_format,
       max_tokens = max_tokens,
-      reasoning = reasoning
+      reasoning = reasoning,
+      response_format_json = response_format_json
     )
     df$labels[i] <- result$label
     if(!is.null(explanations)){
