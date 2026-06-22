@@ -514,7 +514,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' @param reminder_s Short reminders to send after each coding example.
 #' Can be left empty, does not usually improve reliability and costs
 #' too many tokens
-#' @param reminder Short reminder sent after all coding examples. Can
+#' @param reminder Short reminder sent after the final user message. Can
 #' Increase stability of labels - repeat instructions for available labels,
 #' rules the model needs reminder of (for example "do not interpret, only
 #' go by what's explicit in the text"). If reminder is NULL, no reminder and no
@@ -699,5 +699,267 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
     df$tokens_response[i] <- result$tokens_response
     pb$tick()
   }
+  df
+}
+
+
+#' Annotate texts according to coding instructions, using parallel threading
+#'
+#' @description
+#' `bacchuss_lyaeus()` annotates the text in the dataframe you hand over.
+#' Unlike the regular bacchuss function, this one sends out multiple calls in parallel.
+#' If your API supports this, your annotation is x times faster (depending on how many
+#' calls the API allows in parallel).
+#' It uses the instructions you hand over, and detects whether you added
+#' example cases and explanations. Please write instructions that tell the
+#' llm to output labels after Labels:
+#' If your instructions tell the llm to output an explanation first, and
+#' set explanation = TRUE, or hand over a set of explanations for your few shot
+#' examples. bacchuss returns everything after Explanation: as well.
+#' Sometimes, small LLMs will be stuck in short loops. Default behavior is to
+#' message "Attempt failed" and then retry.
+#'
+#' @param df A data frame containing the texts you want to annotate
+#' @param input_column A char indicating the column the texts to code
+#' are stored. Default: "text"
+#' @param ctx_column A char indicating where the context length for
+#' the call is stored. Leave at default if there is none.
+#' Default: "estimated_context_length". If that column doesn't exist:
+#' Throws a message that it uses default_ctx, then uses default_ctx.
+#' Can go up to 40960 if your llm allows it.
+#' @param instructions A char with your coding instructions
+#' @param examples,codes Two vectors with annotation examples: the
+#' example text and the correct label for each case
+#' @param explanations Leave Null if you don't want explanations for
+#' each label.
+#'    * If you use zero shot and want explanations, set TRUE
+#'    * If you use few shot, give a vector with explanations for the
+#'    example labels
+#' @param reminder_s Short reminders to send after each coding example.
+#' Can be left empty, does not usually improve reliability and costs
+#' too many tokens
+#' @param reminder Short reminder sent after the final user message. Can
+#' Increase stability of labels - repeat instructions for available labels,
+#' rules the model needs reminder of (for example "do not interpret, only
+#' go by what's explicit in the text"). If reminder is NULL, no reminder and no
+#' reminder_s will be sent.
+#' @param expected_response_format Do you use plaintext or json format? Default plain.
+#' @param model Which LLM model to use. No default.
+#' @param host Address of the host you use. Default: local ollama
+#' installation (uses default from ollamar package)
+#' @param api_key Which API key to use (if your host handes users with
+#' API keys). Default: NULL for unrestricted APIs.
+#' @param backend Are you using a local Ollama instance or a LiteLLM host?
+#' @param temperature Which temperature to use for the LLM. Higher =
+#' more creative, lower = more consistent. Anything above 1 is not advised.
+#' Default set to 0.2.
+#' @param seed Seed to use for deterministic annotation. In unsuccessful
+#' tries, will try again with seed + 1. Default: NULL
+#' @param retry_loop Small LLMs sometimes get into a long loop producing irrelevant
+#' text. If set TRUE, the results of this run will be discarded and the LLM will
+#' rerun with seed + 1. If set FALSE, keep result from loop - you can inspect the
+#' raw output to check what happened.
+#' @param retry_sleep How long to wait before retrying - to avoid over-
+#' loading local ollama instances. Default: 30 seconds.
+#' @param max_retries Max number of retries per call. Usually only needs
+#' one retry. Default: 3.
+#' @param default_ctx Default context length if no context length is handed
+#' over. Default: 5120.
+#' @param warmup Ollama sometimes acts non-deterministically even if you set a seed.
+#' to adjust to that you can hand over a warmup-value - the first cases will be run
+#' in a warm-up loop before the system runs the actual cases. Default: 0
+#' @param max_tokens Cap length of response - forces the llm to stop generating 
+#' when max token length is reached. Use when llm fails and you suspect infinite
+#' generation of text is the cause.
+#' @param reasoning Whether to request reasoning from the model.
+#'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
+#'   Defaults to FALSE.
+#'   For Ollama, this is sent as `think`.
+#'   For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
+#'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
+#'   Reasoning behavior is model- and backend-dependent and not guaranteed.
+#'   Use reasoning = NULL to omit the parameter if needed.
+#' @param response_format_json An optional json object that limits the response format of 
+#' the llm output. If omitted, you might have to clean up labels.
+#' @param parallel_calls Number of calls sent out in parallel - default is 2. Check your 
+#' API's documentation for how many calls can be processed in parallel. If you exceed the
+#' number, you will end up in the API's queue and might get errors if wait times are
+#' too ling.
+#' @param future_strategy The future strategy handed over to futures - check futures documentation
+#' for available strategies, defaults to multisession. Usually fine for any machine, since this is
+#' not a compute expensive task on our end.
+#' @param show_progress Whether or not to show the progress bar. Defaults to yes.
+#'
+#' @returns
+#' A data frame with added columns:
+#' \describe{
+#'   \item{labels}{Annotated labels.}
+#'   \item{explanations}{Explanations when requested.}
+#'   \item{raw_output}{Reasoning-stripped LLM output used for parsing.}
+#'   \item{max_context_used}{Context used.}
+#'   \item{tokens_prompt}{Prompt tokens.}
+#'   \item{tokens_response}{Response tokens.}
+#'   \item{reasoning_output}{Reasoning output labelled by source - by default we expect NA.}
+#' }
+#' @export
+bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_context_length",
+                            instructions, examples=NULL, explanations=NULL, codes=NULL,
+                            reminder_s = "", reminder, expected_response_format = c("plain","json"),
+                            model, host = NULL, api_key = NULL, backend = c("ollama","litellm"),
+                            temperature = 0.2, seed = NULL,
+                            retry_loop = TRUE,
+                            retry_sleep = 30, max_retries = 3,
+                            default_ctx = 5120, warmup = 0, max_tokens = NULL,
+                            reasoning = FALSE,
+                            response_format_json = NULL,
+                            parallel_calls = 2,
+                            future_strategy = "multisession",
+                            show_progress = TRUE) {
+  
+  expected_response_format <- match.arg(expected_response_format)
+  backend <- match.arg(backend)
+  
+  if (!(input_column %in% names(df))) {
+    stop(sprintf("Input column '%s' not found in dataframe.", input_column), call. = FALSE)
+  }
+  
+  if (!(ctx_column %in% names(df))) {
+    message(sprintf("Estimated context length column not found. Using default_ctx = %d.", default_ctx))
+  }
+  
+  if (nrow(df) == 0) {
+    stop("Input dataframe has 0 rows.", call. = FALSE)
+  }
+  
+  if (!is.numeric(parallel_calls) || length(parallel_calls) != 1 || is.na(parallel_calls) || parallel_calls < 1) {
+    stop("`parallel_calls` must be a single number >= 1.", call. = FALSE)
+  }
+  parallel_calls <- as.integer(parallel_calls)
+  
+  bacchuss:::.validate_reasoning(reasoning)
+  
+  bacchuss:::.validate_response_format_json(response_format_json)
+  
+  if (!is.null(response_format_json) && expected_response_format != "json") {
+    stop("`response_format_json` requires `expected_response_format = 'json'.", call. = FALSE)
+  }
+  
+  if (is.null(response_format_json)) {
+    message("Message: No response json selected.")
+  } else {
+    message("Message: Response json selected.")
+  }
+  
+  if (!requireNamespace("future", quietly = TRUE)) {
+    stop("Package `future` is required. Install it with install.packages('future').", call. = FALSE)
+  }
+  if (!requireNamespace("future.apply", quietly = TRUE)) {
+    stop("Package `future.apply` is required. Install it with install.packages('future.apply').", call. = FALSE)
+  }
+  if (!requireNamespace("progressr", quietly = TRUE)) {
+    stop("Package `progressr` is required. Install it with install.packages('progressr').", call. = FALSE)
+  }
+  
+  has_est <- ctx_column %in% names(df)
+  
+  old_plan <- future::plan()
+  on.exit(future::plan(old_plan), add = TRUE)
+  future::plan(future_strategy, workers = parallel_calls)
+  
+  run_one <- function(i, data) {
+    est_ctx_len <- if (has_est) data[[ctx_column]][i] else NA
+    bacchuss_satyr(
+      instructions=instructions,
+      examples=examples,
+      explanations=explanations,
+      codes=codes,
+      reminder_s=reminder_s,
+      reminder=reminder,
+      input_text=data[[input_column]][i],
+      est_ctx_len=est_ctx_len,
+      model=model,
+      temperature=temperature,
+      host = host,
+      api_key = api_key,
+      retry_loop = retry_loop,
+      retry_sleep = retry_sleep,
+      max_retries = max_retries,
+      default_ctx = default_ctx,
+      seed = seed,
+      backend = backend,
+      expected_response_format = expected_response_format,
+      max_tokens = max_tokens,
+      reasoning = reasoning,
+      response_format_json = response_format_json
+    )
+  }
+  
+  if (show_progress) {
+    progressr::handlers(
+      progressr::handler_progress(
+        format = "  [:bar] :current/:total (:percent) elapsed: :elapsed ETA: :eta"
+      )
+    )
+  }
+  
+  if (warmup > 0) {
+    df_warmup <- df[rep(seq_len(nrow(df)), length.out = warmup), ]
+    message(sprintf("Running warmup: %d calls.", nrow(df_warmup)))
+    
+    if (isTRUE(show_progress)) {
+      progressr::with_progress({
+        p <- progressr::progressor(steps = nrow(df_warmup))
+        invisible(future.apply::future_lapply(
+          seq_len(nrow(df_warmup)),
+          function(i) {
+            on.exit(p(), add = TRUE)
+            run_one(i, df_warmup)
+          },
+          future.seed = TRUE,
+          future.packages = c("ollamar", "httr2", "purrr", "stringr", "jsonlite")
+        ))
+      }, enable = TRUE)
+    } else {
+      invisible(future.apply::future_lapply(
+        seq_len(nrow(df_warmup)),
+        function(i) run_one(i, df_warmup),
+        future.seed = TRUE,
+        future.packages = c("ollamar", "httr2", "purrr", "stringr", "jsonlite")
+      ))
+    }
+  }
+  
+  if (isTRUE(show_progress)) {
+    results <- progressr::with_progress({
+      p <- progressr::progressor(steps = nrow(df))
+      future.apply::future_lapply(
+        seq_len(nrow(df)),
+        function(i) {
+          on.exit(p(), add = TRUE)
+          run_one(i, df)
+        },
+        future.seed = TRUE,
+        future.packages = c("ollamar", "httr2", "purrr", "stringr", "jsonlite")
+      )
+    }, enable = TRUE)
+  } else {
+    results <- future.apply::future_lapply(
+      seq_len(nrow(df)),
+      function(i) run_one(i, df),
+      future.seed = TRUE,
+      future.packages = c("ollamar", "httr2", "purrr", "stringr", "jsonlite")
+    )
+  }
+  
+  df$labels <- vapply(results, function(x) as.character(x$label), character(1))
+  if (!is.null(explanations)) {
+    df$explanations <- vapply(results, function(x) as.character(x$explanation), character(1))
+  }
+  df$raw_output <- vapply(results, function(x) as.character(x$raw_output), character(1))
+  df$reasoning_output <- vapply(results, function(x) as.character(x$reasoning_output), character(1))
+  df$max_context_used <- vapply(results, function(x) as.integer(x$max_context_used), integer(1))
+  df$tokens_prompt <- vapply(results, function(x) as.integer(x$tokens_prompt), integer(1))
+  df$tokens_response <- vapply(results, function(x) as.integer(x$tokens_response), integer(1))
+  
   df
 }
