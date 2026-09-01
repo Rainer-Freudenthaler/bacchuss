@@ -719,6 +719,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
 #' Sometimes, small LLMs will be stuck in short loops. Default behavior is to
 #' message "Attempt failed" and then retry.
 #'
+#' hallo test
 #' @param df A data frame containing the texts you want to annotate
 #' @param input_column A char indicating the column the texts to code
 #' are stored. Default: "text"
