@@ -11,7 +11,7 @@ liknites(
   explanations = NULL,
   n_runs = 3,
   reminder_s = "",
-  reminder,
+  reminder = NULL,
   expected_response_format = c("plain", "json"),
   model,
   host = NULL,
@@ -50,7 +50,7 @@ too many tokens}
 \item{reminder}{Short reminder sent after all coding examples. Can
 Increase stability of labels - repeat instructions for available labels,
 rules the model needs reminder of (for example "do not interpret, only
-go by what's explicit in the text").}
+go by what's explicit in the text"). Default is NULL.}
 
 \item{expected_response_format}{Do you use plaintext or json format? Default plain.}
 

@@ -518,7 +518,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' Increase stability of labels - repeat instructions for available labels,
 #' rules the model needs reminder of (for example "do not interpret, only
 #' go by what's explicit in the text"). If reminder is NULL, no reminder and no
-#' reminder_s will be sent.
+#' reminder_s will be sent. Default is NULL.
 #' @param expected_response_format Do you use plaintext or json format? Default plain.
 #' @param model Which LLM model to use. No default.
 #' @param host Address of the host you use. Default: local ollama
@@ -572,7 +572,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' @export
 bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_length",
                     instructions, examples=NULL, explanations=NULL, codes=NULL,
-                    reminder_s = "", reminder, expected_response_format = c("plain","json"),
+                    reminder_s = "", reminder=NULL, expected_response_format = c("plain","json"),
                     model, host = NULL, api_key = NULL, backend = c("ollama","litellm"),
                     temperature = 0.2, seed = NULL,
                     retry_loop = TRUE,
@@ -742,7 +742,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
 #' Increase stability of labels - repeat instructions for available labels,
 #' rules the model needs reminder of (for example "do not interpret, only
 #' go by what's explicit in the text"). If reminder is NULL, no reminder and no
-#' reminder_s will be sent.
+#' reminder_s will be sent. Default is NULL.
 #' @param expected_response_format Do you use plaintext or json format? Default plain.
 #' @param model Which LLM model to use. No default.
 #' @param host Address of the host you use. Default: local ollama
@@ -804,7 +804,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
 #' @export
 bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_context_length",
                             instructions, examples=NULL, explanations=NULL, codes=NULL,
-                            reminder_s = "", reminder, expected_response_format = c("plain","json"),
+                            reminder_s = "", reminder=NULL, expected_response_format = c("plain","json"),
                             model, host = NULL, api_key = NULL, backend = c("ollama","litellm"),
                             temperature = 0.2, seed = NULL,
                             retry_loop = TRUE,

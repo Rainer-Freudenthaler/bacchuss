@@ -13,7 +13,7 @@ bacchuss(
   explanations = NULL,
   codes = NULL,
   reminder_s = "",
-  reminder,
+  reminder = NULL,
   expected_response_format = c("plain", "json"),
   model,
   host = NULL,
@@ -62,7 +62,7 @@ too many tokens}
 Increase stability of labels - repeat instructions for available labels,
 rules the model needs reminder of (for example "do not interpret, only
 go by what's explicit in the text"). If reminder is NULL, no reminder and no
-reminder_s will be sent.}
+reminder_s will be sent. Default is NULL.}
 
 \item{expected_response_format}{Do you use plaintext or json format? Default plain.}
 

@@ -36,7 +36,7 @@
 #' @param reminder Short reminder sent after all coding examples. Can
 #' Increase stability of labels - repeat instructions for available labels,
 #' rules the model needs reminder of (for example "do not interpret, only
-#' go by what's explicit in the text").
+#' go by what's explicit in the text"). Default is NULL.
 #' @param expected_response_format Do you use plaintext or json format? Default plain.
 #' @param model Which LLM model to use. No default.
 #' @param host Address of the host you use. Default: local ollama
@@ -93,7 +93,7 @@ briseus <- function(df,
                     input_column = "text",
                     ctx_column = "estimated_context_length",
                     instructions, examples = NULL, explanations = NULL, codes = NULL,
-                    reminder_s = "", reminder,
+                    reminder_s = "", reminder=NULL,
                     expected_response_format = c("plain", "json"),
                     model, host = NULL, api_key = NULL, backend = c("ollama", "litellm"),
                     temperature = 0.2, seed = NULL,
@@ -249,7 +249,7 @@ briseus <- function(df,
 #' @param reminder Short reminder sent after all coding examples. Can
 #' Increase stability of labels - repeat instructions for available labels,
 #' rules the model needs reminder of (for example "do not interpret, only
-#' go by what's explicit in the text").
+#' go by what's explicit in the text"). Default is NULL.
 #' @param expected_response_format Do you use plaintext or json format? Default plain.
 #' @param model Which LLM model to use. No default.
 #' @param host Address of the host you use. Default: local ollama
@@ -315,7 +315,7 @@ isodaetes <- function(df,
                       input_column = "text",
                       ctx_column = "estimated_context_length",
                       instructions, examples = NULL, explanations = NULL, codes = NULL,
-                      reminder_s = "", reminder,
+                      reminder_s = "", reminder=NULL,
                       expected_response_format = c("plain", "json"),
                       model, host = NULL, api_key = NULL, backend = c("ollama", "litellm"),
                       temperature = 0.2, seed = NULL,
@@ -532,7 +532,7 @@ isodaetes <- function(df,
 #' @param reminder Short reminder sent after all coding examples. Can
 #' Increase stability of labels - repeat instructions for available labels,
 #' rules the model needs reminder of (for example "do not interpret, only
-#' go by what's explicit in the text").
+#' go by what's explicit in the text"). Default is NULL.
 #' @param expected_response_format Do you use plaintext or json format? Default plain.
 #' @param model Which LLM model to use. No default.
 #' @param host Address of the host you use. Default: local ollama
@@ -593,7 +593,7 @@ liknites <- function(instructions,
                                   explanations = NULL,
                                   n_runs = 3,
                                   reminder_s = "",
-                                  reminder,
+                     reminder=NULL,
                                   expected_response_format = c("plain", "json"),
                                   model, host = NULL, api_key = NULL, backend = c("ollama", "litellm"),
                                   temperature = 0.2, seed = NULL,
