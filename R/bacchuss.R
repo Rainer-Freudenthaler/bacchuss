@@ -809,7 +809,7 @@ bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_c
                             temperature = 0.2, seed = NULL,
                             retry_loop = TRUE,
                             retry_sleep = 30, max_retries = 3,
-                            default_ctx = 5120, warmup = 0, max_tokens = NULL,
+                            default_ctx = 5120, warmup = 0, max_tokens = 2048,
                             reasoning = FALSE,
                             response_format_json = NULL,
                             parallel_calls = 2,
@@ -836,9 +836,9 @@ bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_c
   }
   parallel_calls <- as.integer(parallel_calls)
   
-  bacchuss:::.validate_reasoning(reasoning)
+  .validate_reasoning(reasoning)
   
-  bacchuss:::.validate_response_format_json(response_format_json)
+  .validate_response_format_json(response_format_json)
   
   if (!is.null(response_format_json) && expected_response_format != "json") {
     stop("`response_format_json` requires `expected_response_format = 'json'.", call. = FALSE)

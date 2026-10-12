@@ -28,7 +28,8 @@ briseus(
   default_ctx = 5120,
   warmup = 0,
   max_tokens = NULL,
-  reasoning = FALSE
+  reasoning = FALSE,
+  response_format_json = NULL
 )
 }
 \arguments{
@@ -114,6 +115,11 @@ For LiteLLM, FALSE maps to `reasoning_effort = "none"`,
 TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 Reasoning behavior is model- and backend-dependent and not guaranteed.
 Use reasoning = NULL to omit the parameter if needed.}
+
+\item{response_format_json}{An optional JSON schema or response
+format object passed to the LLM backend to constrain its output.
+Requires `expected_response_format = "json"`.
+Defaults to NULL.}
 }
 \value{
 A data frame with added columns:

@@ -48,6 +48,33 @@
 #'   \item{group}{the group mentioned in the text}
 #'   \item{Emotion}{true label from human annotation}
 #'   \item{length}{word count of text}
-#'   \item{estimated context length}{estimated context length for annotation}r
+#'   \item{estimated_context_length}{estimated context length for annotation}r
 #' }
 "example_set"
+
+#' Example annotation instructions with JSON output
+#'
+#' Instructions for requesting annotations with explanations
+#' using JSON-formatted responses.
+#'
+#' @format A character string.
+#' @name example_instructions_expl_json
+NULL
+
+
+#' Default jury append prompt
+#'
+#' Example prompt for jury-based annotation.
+#'
+#' @format A character string.
+#' @name jury_append_prompt
+NULL
+
+
+#' Default jury reminder
+#'
+#' Reminder used in jury-based annotation.
+#'
+#' @format A character string.
+#' @name jury_reminder
+NULL

@@ -73,6 +73,10 @@
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
 #'   Use reasoning = NULL to omit the parameter if needed.
+#' @param response_format_json An optional JSON schema or response
+#'   format object passed to the LLM backend to constrain its output.
+#'   Requires `expected_response_format = "json"`.
+#'   Defaults to NULL.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -97,7 +101,8 @@ briseus <- function(df,
                     retry_sleep = 30, max_retries = 3,
                     default_ctx = 5120, warmup = 0,
                     max_tokens = NULL,
-                    reasoning = FALSE) {
+                    reasoning = FALSE,
+                    response_format_json = NULL) {
   
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -109,6 +114,16 @@ briseus <- function(df,
   
   .validate_reasoning(reasoning)
   n_runs <- as.integer(n_runs)
+  
+  .validate_response_format_json(response_format_json)
+  
+  if (!is.null(response_format_json) &&
+      expected_response_format != "json") {
+    stop(
+      "`response_format_json` requires `expected_response_format = 'json'.",
+      call. = FALSE
+    )
+  }
   
   # store run outputs
   labels_mat <- matrix(NA_character_, nrow = nrow(df), ncol = n_runs)
@@ -143,7 +158,8 @@ briseus <- function(df,
       default_ctx = default_ctx,
       warmup = warmup,
       max_tokens = max_tokens,
-      reasoning = reasoning
+      reasoning = reasoning,
+      response_format_json = response_format_json
     )
     
     labels_mat[, r] <- res_r$labels
@@ -275,6 +291,10 @@ briseus <- function(df,
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
 #'   Use reasoning = NULL to omit the parameter if needed.
+#' @param response_format_json An optional JSON schema or response
+#'   format object passed to the LLM backend to constrain its output.
+#'   Requires `expected_response_format = "json"`.
+#'   Defaults to NULL.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -307,7 +327,8 @@ isodaetes <- function(df,
                       jury_seed = NULL,
                       jury_reminder = "Decide the best single label based strictly on the coding instructions. Output only in the required format.",
                       max_tokens = NULL,
-                      reasoning = FALSE) {
+                      reasoning = FALSE,
+                      response_format_json = NULL) {
   
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -324,6 +345,16 @@ isodaetes <- function(df,
   }
   
   .validate_reasoning(reasoning)
+  
+  .validate_response_format_json(response_format_json)
+  
+  if (!is.null(response_format_json) &&
+      expected_response_format != "json") {
+    stop(
+      "`response_format_json` requires `expected_response_format = 'json'.",
+      call. = FALSE
+    )
+  }
   
   if (is.null(jury_append_prompt)) {
     jury_append_prompt <- paste0(
@@ -367,7 +398,8 @@ isodaetes <- function(df,
       default_ctx = default_ctx,
       warmup = warmup,
       max_tokens = max_tokens,
-      reasoning = reasoning
+      reasoning = reasoning,
+      response_format_json = response_format_json
     )
     
     labels_mat[, r] <- res_r$labels
@@ -463,7 +495,8 @@ isodaetes <- function(df,
         default_ctx = default_ctx,
         expected_response_format = expected_response_format,
         max_tokens = max_tokens,
-        reasoning = reasoning
+        reasoning = reasoning,
+        response_format_json = response_format_json
       )
       
       out$final_label[i] <- jury_res$label
@@ -534,6 +567,10 @@ isodaetes <- function(df,
 #'   TRUE maps to `"medium"`, and "low"/"medium"/"high" are passed through.
 #'   Reasoning behavior is model- and backend-dependent and not guaranteed.
 #'   Use reasoning = NULL to omit the parameter if needed.
+#' @param response_format_json An optional JSON schema or response
+#'   format object passed to the LLM backend to constrain its output.
+#'   Requires `expected_response_format = "json"`.
+#'   Defaults to NULL.
 #'
 #' @returns
 #' A data frame with added columns:
@@ -565,7 +602,8 @@ liknites <- function(instructions,
                                   default_ctx = 5120,
                                   verbose = TRUE,
                      max_tokens = NULL,
-                     reasoning = FALSE) {
+                     reasoning = FALSE,
+                     response_format_json = NULL) {
   
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -584,6 +622,16 @@ liknites <- function(instructions,
   
   .validate_reasoning(reasoning)
   n_runs <- as.integer(n_runs)
+  
+  .validate_response_format_json(response_format_json)
+  
+  if (!is.null(response_format_json) &&
+      expected_response_format != "json") {
+    stop(
+      "`response_format_json` requires `expected_response_format = 'json'.",
+      call. = FALSE
+    )
+  }
   
   # normalize NAs like your main code does
   examples <- if (length(examples) == 1 && is.na(examples)) NULL else { examples[is.na(examples)] <- ""; examples }
@@ -652,7 +700,8 @@ liknites <- function(instructions,
         max_retries = max_retries,
         default_ctx = default_ctx,
         max_tokens = max_tokens,
-        reasoning = reasoning
+        reasoning = reasoning,
+        response_format_json = response_format_json
       )
       
       pred_labels[j, r] <- res$label

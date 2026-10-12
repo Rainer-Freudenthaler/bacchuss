@@ -26,7 +26,7 @@ bacchuss_lyaeus(
   max_retries = 3,
   default_ctx = 5120,
   warmup = 0,
-  max_tokens = NULL,
+  max_tokens = 2048,
   reasoning = FALSE,
   response_format_json = NULL,
   parallel_calls = 2,

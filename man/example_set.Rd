@@ -11,7 +11,7 @@ A data frame with 809 rows and 5 columns:
   \item{group}{the group mentioned in the text}
   \item{Emotion}{true label from human annotation}
   \item{length}{word count of text}
-  \item{estimated context length}{estimated context length for annotation}r
+  \item{estimated_context_length}{estimated context length for annotation}r
 }
 }
 \usage{
