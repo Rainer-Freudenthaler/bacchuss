@@ -2,7 +2,8 @@
 % Please edit documentation in R/epithets.R
 \name{isodaetes}
 \alias{isodaetes}
-\title{Annotate texts - majority out of x according to coding instructions, jury for ties}
+\title{Annotate texts - majority out of x according to coding instructions, jury for 
+low-agreement cases}
 \usage{
 isodaetes(
   df,
@@ -33,9 +34,13 @@ isodaetes(
   jury_seed = NULL,
   jury_reminder =
     "Decide the best single label based strictly on the coding instructions. Output only in the required format.",
-  max_tokens = NULL,
+  max_tokens = 2048,
   reasoning = FALSE,
-  response_format_json = NULL
+  response_format_json = NULL,
+  parallel = FALSE,
+  parallel_calls = 2,
+  future_strategy = "multisession",
+  show_progress = TRUE
 )
 }
 \arguments{
@@ -43,8 +48,8 @@ isodaetes(
 
 \item{n_runs}{Number of annotation runs over the same dataset. Default: 3.}
 
-\item{agreement_threshold}{Agreement threshold - if majority vote is below the 
-threshold, llm jury is applied. Default: 0.5}
+\item{agreement_threshold}{Agreement threshold - if majority vote is at or
+below the threshold, the LLM jury is applied. Default: 0.5.}
 
 \item{input_column}{A char indicating the column the texts to code
 are stored. Default: "text"}
@@ -91,8 +96,12 @@ API keys). Default: NULL for unrestricted APIs.}
 more creative, lower = more consistent. Anything above 1 is not advised.
 Default set to 0.2.}
 
-\item{seed}{Seed to use for deterministic annotation. In unsuccessful
-tries, will try again with seed + 1. Default: NULL}
+\item{seed}{Optional model seed. Can be NULL, a single integer used for all
+observations, or a vector of integers of length nrow(df), providing an
+individual starting seed for each observation. In briseus() and isodaetes(),
+seeds are incremented by 1 between annotation runs. On unsuccessful
+attempts, retries use the observation's seed incremented by 1.
+Default: NULL.}
 
 \item{retry_loop}{Small LLMs sometimes get into a long loop producing irrelevant
 text. If set TRUE, the results of this run will be discarded and the LLM will
@@ -123,7 +132,7 @@ If NULL uses english default.}
 
 \item{max_tokens}{Cap length of response - forces the llm to stop generating 
 when max token length is reached. Use when llm fails and you suspect infinite
-generation of text is the cause.}
+generation of text is the cause. Default is 2048.}
 
 \item{reasoning}{Whether to request reasoning from the model.
 One of FALSE, TRUE, NULL, "low", "medium", or "high".
@@ -138,6 +147,18 @@ Use reasoning = NULL to omit the parameter if needed.}
 format object passed to the LLM backend to constrain its output.
 Requires `expected_response_format = "json"`.
 Defaults to NULL.}
+
+\item{parallel}{Whether to process annotations in parallel.
+Defaults to FALSE.}
+
+\item{parallel_calls}{Number of concurrent R workers.
+Defaults to 2.}
+
+\item{future_strategy}{Future execution strategy.
+Defaults to "multisession".}
+
+\item{show_progress}{Whether to display progress during parallel
+annotation. Defaults to TRUE. Has no effect when parallel = FALSE.}
 }
 \value{
 A data frame with added columns:
@@ -156,7 +177,7 @@ A data frame with added columns:
 `isodaetes()` annotates the text in the dataframe you hand over.
 It uses the instructions you hand over, and detects whether you added
 example cases and explanations. Please write instructions that tell the
-llm to output labels after Labels:
+llm to output labels after Label:
 If your instructions tell the llm to output an explanation first, and
 set explanation = TRUE, or hand over a set of explanations for your few shot
 examples. isodaetes returns everything after Explanation: as well.

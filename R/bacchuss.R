@@ -18,6 +18,30 @@
   invisible(response_format_json)
 }
 
+.validate_row_seed <- function(seed, n) {
+  if (is.null(seed)) return(invisible(NULL))
+  
+  if (!is.numeric(seed) ||
+      length(seed) == 0L ||
+      anyNA(seed) ||
+      any(!is.finite(seed)) ||
+      any(seed != floor(seed))) {
+    stop(
+      "`seed` must be NULL, a single integer, or a vector of integers.",
+      call. = FALSE
+    )
+  }
+  
+  if (!(length(seed) %in% c(1L, n))) {
+    stop(
+      sprintf("`seed` must have length 1 or %d.", n),
+      call. = FALSE
+    )
+  }
+  
+  invisible(seed)
+}
+
 .extract_reasoning <- function(message, raw_text) {
   
   reasoning_parts <- character()
@@ -82,7 +106,7 @@
 #' `bacchuss_satyr()` annotates a single text. It's used within `bacchuss()`.
 #' It uses the instructions you hand over, and detects whether you added
 #' example cases and explanations. Please write instructions that tell the
-#' llm to output labels after Labels:
+#' llm to output labels after Label:
 #' If your instructions tell the llm to output an explanation first, and
 #' set explanation = TRUE, or hand over a set of explanations for your few shot
 #' examples. bacchuss_satyr returns everything after Explanation: as well.
@@ -130,7 +154,7 @@
 #' over. Default: 5120.
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
-#' generation of text is the cause.
+#' generation of text is the cause. Default is 2048.
 #' @param reasoning Whether to request reasoning from the model.
 #'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
 #'   Defaults to FALSE.
@@ -159,7 +183,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
                            model, host = NULL, api_key = NULL, backend = c("ollama","litellm"),
                            temperature = 0.2, seed = NULL,
                            retry_sleep = 30, max_retries = 3, default_ctx = 5120,
-                           retry_loop = TRUE, max_tokens = NULL,
+                           retry_loop = TRUE, max_tokens = 2048,
                            reasoning = FALSE, response_format_json = NULL) {
   expected_response_format <- match.arg(expected_response_format)
   backend <- match.arg(backend)
@@ -488,7 +512,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' `bacchuss()` annotates the text in the dataframe you hand over.
 #' It uses the instructions you hand over, and detects whether you added
 #' example cases and explanations. Please write instructions that tell the
-#' llm to output labels after Labels:
+#' llm to output labels after Label:
 #' If your instructions tell the llm to output an explanation first, and
 #' set explanation = TRUE, or hand over a set of explanations for your few shot
 #' examples. bacchuss returns everything after Explanation: as well.
@@ -529,8 +553,10 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' @param temperature Which temperature to use for the LLM. Higher =
 #' more creative, lower = more consistent. Anything above 1 is not advised.
 #' Default set to 0.2.
-#' @param seed Seed to use for deterministic annotation. In unsuccessful
-#' tries, will try again with seed + 1. Default: NULL
+#' @param seed Optional model seed. Can be NULL, a single integer used for all
+#' observations, or a vector of integers of length nrow(df), providing an
+#' individual starting seed for each observation. On unsuccessful attempts,
+#' retries use the observation's seed incremented by 1. Default: NULL.
 #' @param retry_loop Small LLMs sometimes get into a long loop producing irrelevant
 #' text. If set TRUE, the results of this run will be discarded and the LLM will
 #' rerun with seed + 1. If set FALSE, keep result from loop - you can inspect the
@@ -546,7 +572,7 @@ bacchuss_satyr <- function(instructions, examples = NULL, explanations = NULL, c
 #' in a warm-up loop before the system runs the actual cases. Default: 0
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
-#' generation of text is the cause.
+#' generation of text is the cause. Default is 2048.
 #' @param reasoning Whether to request reasoning from the model.
 #'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
 #'   Defaults to FALSE.
@@ -577,7 +603,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
                     temperature = 0.2, seed = NULL,
                     retry_loop = TRUE,
                     retry_sleep = 30, max_retries = 3,
-                    default_ctx = 5120, warmup = 0, max_tokens = NULL,
+                    default_ctx = 5120, warmup = 0, max_tokens = 2048,
                     reasoning = FALSE,
                     response_format_json = NULL) {
 
@@ -609,6 +635,20 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
   } else {
     message("Message: Response json selected.")
   }
+  
+  .validate_row_seed(seed, nrow(df))
+  
+  source_df <- df
+  
+  seed_for_row <- function(i) {
+    if (is.null(seed)) {
+      NULL
+    } else if (length(seed) == 1L) {
+      seed
+    } else {
+      seed[i]
+    }
+  }
 
   df$labels <- NA_character_
   if (!is.null(explanations)) df$explanations <- NA_character_
@@ -618,10 +658,15 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
   df$tokens_prompt <- NA_integer_
   df$tokens_response <- NA_integer_
 
-  has_est <- ctx_column %in% names(df)
+  has_est <- ctx_column %in% names(source_df)
 
   if (warmup > 0) {
-    df_warmup <- df[rep(seq_len(nrow(df)), length.out = warmup), ]
+    warmup_indices <- rep(
+      seq_len(nrow(source_df)),
+      length.out = warmup
+    )
+    
+    df_warmup <- source_df[warmup_indices, , drop = FALSE]
     message(sprintf("Running warmup: %d calls.", nrow(df_warmup)))
     pb_warmup <- progress::progress_bar$new(
       format = "  warmup [:bar] :current/:total (:percent) in :elapsed ETA: :eta",
@@ -648,7 +693,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
         retry_sleep = retry_sleep,
         max_retries = max_retries,
         default_ctx = default_ctx,
-        seed = seed,
+        seed = seed_for_row(warmup_indices[i]),
         backend = backend,
         expected_response_format = expected_response_format,
         max_tokens = max_tokens,
@@ -663,7 +708,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
                                    total = nrow(df), clear = FALSE, width = 60)
 
   for (i in seq_len(nrow(df))) {
-    est_ctx_len <- if (has_est) df[[ctx_column]][i] else NA
+    est_ctx_len <- if (has_est) source_df[[ctx_column]][i] else NA
     result <- bacchuss_satyr(
       instructions=instructions,
       examples=examples,
@@ -671,7 +716,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
       codes=codes,
       reminder_s=reminder_s,
       reminder=reminder,
-      input_text=df[[input_column]][i],
+      input_text=source_df[[input_column]][i],
       est_ctx_len=est_ctx_len,
       model=model,
       temperature=temperature,
@@ -681,7 +726,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
       retry_sleep = retry_sleep,
       max_retries = max_retries,
       default_ctx = default_ctx,
-      seed = seed,
+      seed = seed_for_row(i),
       backend = backend,
       expected_response_format = expected_response_format,
       max_tokens = max_tokens,
@@ -712,7 +757,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
 #' calls the API allows in parallel).
 #' It uses the instructions you hand over, and detects whether you added
 #' example cases and explanations. Please write instructions that tell the
-#' llm to output labels after Labels:
+#' llm to output labels after Label:
 #' If your instructions tell the llm to output an explanation first, and
 #' set explanation = TRUE, or hand over a set of explanations for your few shot
 #' examples. bacchuss returns everything after Explanation: as well.
@@ -753,8 +798,10 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
 #' @param temperature Which temperature to use for the LLM. Higher =
 #' more creative, lower = more consistent. Anything above 1 is not advised.
 #' Default set to 0.2.
-#' @param seed Seed to use for deterministic annotation. In unsuccessful
-#' tries, will try again with seed + 1. Default: NULL
+#' @param seed Optional model seed. Can be NULL, a single integer used for all
+#' observations, or a vector of integers of length nrow(df), providing an
+#' individual starting seed for each observation. On unsuccessful attempts,
+#' retries use the observation's seed incremented by 1. Default: NULL.
 #' @param retry_loop Small LLMs sometimes get into a long loop producing irrelevant
 #' text. If set TRUE, the results of this run will be discarded and the LLM will
 #' rerun with seed + 1. If set FALSE, keep result from loop - you can inspect the
@@ -770,7 +817,7 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
 #' in a warm-up loop before the system runs the actual cases. Default: 0
 #' @param max_tokens Cap length of response - forces the llm to stop generating 
 #' when max token length is reached. Use when llm fails and you suspect infinite
-#' generation of text is the cause.
+#' generation of text is the cause. Default is 2048.
 #' @param reasoning Whether to request reasoning from the model.
 #'   One of FALSE, TRUE, NULL, "low", "medium", or "high".
 #'   Defaults to FALSE.
@@ -781,10 +828,11 @@ bacchuss <- function(df, input_column = "text", ctx_column = "estimated_context_
 #'   Use reasoning = NULL to omit the parameter if needed.
 #' @param response_format_json An optional json object that limits the response format of 
 #' the llm output. If omitted, you might have to clean up labels.
-#' @param parallel_calls Number of calls sent out in parallel - default is 2. Check your 
-#' API's documentation for how many calls can be processed in parallel. If you exceed the
-#' number, you will end up in the API's queue and might get errors if wait times are
-#' too ling.
+#' @param parallel_calls Maximum number of concurrent R workers. The actual worker 
+#' count is capped at the number of input rows. Defaults to 2. Check your  API's 
+#' documentation for how many calls can be processed in parallel. If you exceed 
+#' the number, you will end up in the API's queue and might get errors if wait 
+#' times are too long.
 #' @param future_strategy The future strategy handed over to futures - check futures documentation
 #' for available strategies, defaults to multisession. Usually fine for any machine, since this is
 #' not a compute expensive task on our end.
@@ -831,10 +879,23 @@ bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_c
     stop("Input dataframe has 0 rows.", call. = FALSE)
   }
   
-  if (!is.numeric(parallel_calls) || length(parallel_calls) != 1 || is.na(parallel_calls) || parallel_calls < 1) {
-    stop("`parallel_calls` must be a single number >= 1.", call. = FALSE)
+  .validate_row_seed(seed, nrow(df))
+  
+  if (!is.numeric(parallel_calls) ||
+      length(parallel_calls) != 1L ||
+      is.na(parallel_calls) ||
+      !is.finite(parallel_calls) ||
+      parallel_calls < 1 ||
+      parallel_calls != floor(parallel_calls) ||
+      parallel_calls > .Machine$integer.max) {
+    
+    stop(
+      "`parallel_calls` must be a single finite integer >= 1.",
+      call. = FALSE
+    )
   }
-  parallel_calls <- as.integer(parallel_calls)
+  
+  parallel_calls <- min(as.integer(parallel_calls), nrow(df))
   
   .validate_reasoning(reasoning)
   
@@ -850,24 +911,21 @@ bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_c
     message("Message: Response json selected.")
   }
   
-  if (!requireNamespace("future", quietly = TRUE)) {
-    stop("Package `future` is required. Install it with install.packages('future').", call. = FALSE)
-  }
-  if (!requireNamespace("future.apply", quietly = TRUE)) {
-    stop("Package `future.apply` is required. Install it with install.packages('future.apply').", call. = FALSE)
-  }
-  if (!requireNamespace("progressr", quietly = TRUE)) {
-    stop("Package `progressr` is required. Install it with install.packages('progressr').", call. = FALSE)
-  }
-  
   has_est <- ctx_column %in% names(df)
   
   old_plan <- future::plan()
   on.exit(future::plan(old_plan), add = TRUE)
   future::plan(future_strategy, workers = parallel_calls)
   
-  run_one <- function(i, data) {
+  run_one <- function(i, data, seed_index = i) {
     est_ctx_len <- if (has_est) data[[ctx_column]][i] else NA
+    seed_i <- if (is.null(seed)) {
+      NULL
+    } else if (length(seed) == 1L) {
+      seed
+    } else {
+      seed[seed_index]
+    }
     bacchuss_satyr(
       instructions=instructions,
       examples=examples,
@@ -885,7 +943,7 @@ bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_c
       retry_sleep = retry_sleep,
       max_retries = max_retries,
       default_ctx = default_ctx,
-      seed = seed,
+      seed = seed_i,
       backend = backend,
       expected_response_format = expected_response_format,
       max_tokens = max_tokens,
@@ -903,7 +961,11 @@ bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_c
   }
   
   if (warmup > 0) {
-    df_warmup <- df[rep(seq_len(nrow(df)), length.out = warmup), ]
+
+    warmup_indices <- rep(seq_len(nrow(df)), length.out = warmup)
+    
+    df_warmup <- df[warmup_indices, , drop = FALSE]
+    
     message(sprintf("Running warmup: %d calls.", nrow(df_warmup)))
     
     if (isTRUE(show_progress)) {
@@ -913,7 +975,7 @@ bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_c
           seq_len(nrow(df_warmup)),
           function(i) {
             on.exit(p(), add = TRUE)
-            run_one(i, df_warmup)
+            run_one(i, df_warmup, seed_index = warmup_indices[i])
           },
           future.seed = TRUE,
           future.packages = c("ollamar", "httr2", "purrr", "stringr", "jsonlite")
@@ -922,7 +984,7 @@ bacchuss_lyaeus <- function(df, input_column = "text", ctx_column = "estimated_c
     } else {
       invisible(future.apply::future_lapply(
         seq_len(nrow(df_warmup)),
-        function(i) run_one(i, df_warmup),
+        function(i) run_one(i, df_warmup, seed_index = warmup_indices[i]),
         future.seed = TRUE,
         future.packages = c("ollamar", "httr2", "purrr", "stringr", "jsonlite")
       ))

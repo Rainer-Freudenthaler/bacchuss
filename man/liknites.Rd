@@ -24,9 +24,13 @@ liknites(
   max_retries = 3,
   default_ctx = 5120,
   verbose = TRUE,
-  max_tokens = NULL,
+  max_tokens = 2048,
   reasoning = FALSE,
-  response_format_json = NULL
+  response_format_json = NULL,
+  parallel = FALSE,
+  parallel_calls = 2,
+  future_strategy = "multisession",
+  show_progress = TRUE
 )
 }
 \arguments{
@@ -68,8 +72,13 @@ API keys). Default: NULL for unrestricted APIs.}
 more creative, lower = more consistent. Anything above 1 is not advised.
 Default set to 0.2.}
 
-\item{seed}{Seed to use for deterministic annotation. In unsuccessful
-tries, will try again with seed + 1. Default: NULL}
+\item{seed}{Optional model seed. Can be NULL, a single integer, or a
+vector of integers of length length(examples).
+A single seed preserves the existing sequential seed assignment
+across examples and repetitions. With a vector, each element
+supplies the starting seed for its corresponding example;
+subsequent repetitions increment that seed by 1.
+Failed attempts also increment the seed by 1. Default: NULL.}
 
 \item{retry_loop}{Small LLMs sometimes get into a long loop producing irrelevant
 text. If set TRUE, the results of this run will be discarded and the LLM will
@@ -89,7 +98,7 @@ over. Default: 5120.}
 
 \item{max_tokens}{Cap length of response - forces the llm to stop generating 
 when max token length is reached. Use when llm fails and you suspect infinite
-generation of text is the cause.}
+generation of text is the cause. Default is 2048.}
 
 \item{reasoning}{Whether to request reasoning from the model.
 One of FALSE, TRUE, NULL, "low", "medium", or "high".
@@ -104,6 +113,19 @@ Use reasoning = NULL to omit the parameter if needed.}
 format object passed to the LLM backend to constrain its output.
 Requires `expected_response_format = "json"`.
 Defaults to NULL.}
+
+\item{parallel}{Whether to process annotations in parallel.
+Defaults to FALSE.}
+
+\item{parallel_calls}{Maximum number of concurrent R workers. The actual 
+worker count is capped at the number of input rows.
+Defaults to 2.}
+
+\item{future_strategy}{Future execution strategy.
+Defaults to "multisession".}
+
+\item{show_progress}{Whether to display annotation progress.
+Defaults to TRUE.}
 }
 \value{
 A data frame with added columns:
@@ -113,9 +135,9 @@ A data frame with added columns:
   \item{example_id}{An id for each example}
   \item{text}{The example text.}
   \item{true_label}{The original label.}
-  \item{labels_runx}{Annotated labels by run number.}
-  \item{explanations_runx}{Explanations when requested by run number.}
-  \item{majority_label}{Label that got annotated in most runs}
+  \item{pred_label_runx}{Predicted labels by run number.}
+  \item{pred_expl_runx}{Predicted explanations when requested, by run number.}
+  \item{majority_pred}{Label predicted in most runs.}
   \item{majority_count}{How often majority label was chosen.}
   \item{agreement}{majority_count / number of runs}
   \item{correct_majority}{Whether the majority call was correct}

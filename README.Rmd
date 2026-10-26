@@ -34,13 +34,14 @@ The name, as you might have noticed, is a pun on the name of the god of wine. I 
 - API bearer token handling
 - Can use local LiteLLM as well
 -	Annotation warmup – I found that ollama is not always deterministic even if you set a seed in the first few API calls. I have found hints of why that is on github – it has to do with how the KV cache handles RAM. I found that after a few hundred calls with the same annotation instructions, the annotations become stable. Consequently, I added a parameter to simply run the first few hundred cases twice until annotation becomes stable. Will deprecate once/if ollama fixes the issue. 
+-	A utility function to test for informative cases in your few shot examples – which ones does the llm disagree about?
+-	A utility function to test for informative cases in your sample
+-	Function for consensus coding (multiple runs with the same model)
+- extraction from json output and json schema generation and handling for all functions
 
 ## What I plan to do (soon™)
 
--	A utility function to test for informative cases in your few shot examples – which ones does the llm disagree about?
--	A utility function to test for informative cases in your sample
 -	Function for context length estimation
--	Function for consensus coding (multiple runs with the same model)
 -	Manual for weighing scores if you used weighed samples for validation (will probably not be new functions in this package, I will write vignettes that use packages that already have that function)
 -	function for generating categories from the data
 

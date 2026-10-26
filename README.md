@@ -48,14 +48,16 @@ coder either. Wine might have been involved as well.
   parameter to simply run the first few hundred cases twice until
   annotation becomes stable. Will deprecate once/if ollama fixes the
   issue.
-
-## What I plan to do (soon™)
-
 - A utility function to test for informative cases in your few shot
   examples – which ones does the llm disagree about?
 - A utility function to test for informative cases in your sample
-- Function for context length estimation
 - Function for consensus coding (multiple runs with the same model)
+- extraction from json output and json schema generation and handling
+  for all functions
+
+## What I plan to do (soon™)
+
+- Function for context length estimation
 - Manual for weighing scores if you used weighed samples for validation
   (will probably not be new functions in this package, I will write
   vignettes that use packages that already have that function)

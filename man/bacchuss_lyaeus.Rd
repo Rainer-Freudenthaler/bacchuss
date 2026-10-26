@@ -83,8 +83,10 @@ API keys). Default: NULL for unrestricted APIs.}
 more creative, lower = more consistent. Anything above 1 is not advised.
 Default set to 0.2.}
 
-\item{seed}{Seed to use for deterministic annotation. In unsuccessful
-tries, will try again with seed + 1. Default: NULL}
+\item{seed}{Optional model seed. Can be NULL, a single integer used for all
+observations, or a vector of integers of length nrow(df), providing an
+individual starting seed for each observation. On unsuccessful attempts,
+retries use the observation's seed incremented by 1. Default: NULL.}
 
 \item{retry_loop}{Small LLMs sometimes get into a long loop producing irrelevant
 text. If set TRUE, the results of this run will be discarded and the LLM will
@@ -106,7 +108,7 @@ in a warm-up loop before the system runs the actual cases. Default: 0}
 
 \item{max_tokens}{Cap length of response - forces the llm to stop generating 
 when max token length is reached. Use when llm fails and you suspect infinite
-generation of text is the cause.}
+generation of text is the cause. Default is 2048.}
 
 \item{reasoning}{Whether to request reasoning from the model.
 One of FALSE, TRUE, NULL, "low", "medium", or "high".
@@ -120,10 +122,11 @@ Use reasoning = NULL to omit the parameter if needed.}
 \item{response_format_json}{An optional json object that limits the response format of 
 the llm output. If omitted, you might have to clean up labels.}
 
-\item{parallel_calls}{Number of calls sent out in parallel - default is 2. Check your 
-API's documentation for how many calls can be processed in parallel. If you exceed the
-number, you will end up in the API's queue and might get errors if wait times are
-too ling.}
+\item{parallel_calls}{Maximum number of concurrent R workers. The actual worker 
+count is capped at the number of input rows. Defaults to 2. Check your  API's 
+documentation for how many calls can be processed in parallel. If you exceed 
+the number, you will end up in the API's queue and might get errors if wait 
+times are too long.}
 
 \item{future_strategy}{The future strategy handed over to futures - check futures documentation
 for available strategies, defaults to multisession. Usually fine for any machine, since this is
@@ -150,7 +153,7 @@ If your API supports this, your annotation is x times faster (depending on how m
 calls the API allows in parallel).
 It uses the instructions you hand over, and detects whether you added
 example cases and explanations. Please write instructions that tell the
-llm to output labels after Labels:
+llm to output labels after Label:
 If your instructions tell the llm to output an explanation first, and
 set explanation = TRUE, or hand over a set of explanations for your few shot
 examples. bacchuss returns everything after Explanation: as well.

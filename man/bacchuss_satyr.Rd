@@ -24,7 +24,7 @@ bacchuss_satyr(
   max_retries = 3,
   default_ctx = 5120,
   retry_loop = TRUE,
-  max_tokens = NULL,
+  max_tokens = 2048,
   reasoning = FALSE,
   response_format_json = NULL
 )
@@ -91,7 +91,7 @@ raw output to check what happened.}
 
 \item{max_tokens}{Cap length of response - forces the llm to stop generating 
 when max token length is reached. Use when llm fails and you suspect infinite
-generation of text is the cause.}
+generation of text is the cause. Default is 2048.}
 
 \item{reasoning}{Whether to request reasoning from the model.
 One of FALSE, TRUE, NULL, "low", "medium", or "high".
@@ -121,7 +121,7 @@ A list with:
 `bacchuss_satyr()` annotates a single text. It's used within `bacchuss()`.
 It uses the instructions you hand over, and detects whether you added
 example cases and explanations. Please write instructions that tell the
-llm to output labels after Labels:
+llm to output labels after Label:
 If your instructions tell the llm to output an explanation first, and
 set explanation = TRUE, or hand over a set of explanations for your few shot
 examples. bacchuss_satyr returns everything after Explanation: as well.

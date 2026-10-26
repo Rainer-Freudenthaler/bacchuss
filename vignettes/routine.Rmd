@@ -63,7 +63,7 @@ annotation_test_2_1 <- bacchuss(example_set, input_column = "paragraphs",
                         host = NULL,
                         api_key = NULL)
 
-View(example_zero)
+View(annotation_test_2_1)
 ```
 
 Visually inspect your results:
@@ -99,7 +99,7 @@ annotation_test_2_2 <- briseus(example_set, input_column = "paragraphs", n_runs 
                         host = NULL,
                         api_key = NULL)
 
-View(example_zero)
+View(annotation_test_2_2)
 ```
 
 The function used here will give you the final label it arrived on, labels for all runs, and agreement. Sort by agreement and inspect the cases that have low agreement between runs.

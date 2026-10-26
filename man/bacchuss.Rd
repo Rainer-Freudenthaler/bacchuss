@@ -26,7 +26,7 @@ bacchuss(
   max_retries = 3,
   default_ctx = 5120,
   warmup = 0,
-  max_tokens = NULL,
+  max_tokens = 2048,
   reasoning = FALSE,
   response_format_json = NULL
 )
@@ -80,8 +80,10 @@ API keys). Default: NULL for unrestricted APIs.}
 more creative, lower = more consistent. Anything above 1 is not advised.
 Default set to 0.2.}
 
-\item{seed}{Seed to use for deterministic annotation. In unsuccessful
-tries, will try again with seed + 1. Default: NULL}
+\item{seed}{Optional model seed. Can be NULL, a single integer used for all
+observations, or a vector of integers of length nrow(df), providing an
+individual starting seed for each observation. On unsuccessful attempts,
+retries use the observation's seed incremented by 1. Default: NULL.}
 
 \item{retry_loop}{Small LLMs sometimes get into a long loop producing irrelevant
 text. If set TRUE, the results of this run will be discarded and the LLM will
@@ -103,7 +105,7 @@ in a warm-up loop before the system runs the actual cases. Default: 0}
 
 \item{max_tokens}{Cap length of response - forces the llm to stop generating 
 when max token length is reached. Use when llm fails and you suspect infinite
-generation of text is the cause.}
+generation of text is the cause. Default is 2048.}
 
 \item{reasoning}{Whether to request reasoning from the model.
 One of FALSE, TRUE, NULL, "low", "medium", or "high".
@@ -133,7 +135,7 @@ A data frame with added columns:
 `bacchuss()` annotates the text in the dataframe you hand over.
 It uses the instructions you hand over, and detects whether you added
 example cases and explanations. Please write instructions that tell the
-llm to output labels after Labels:
+llm to output labels after Label:
 If your instructions tell the llm to output an explanation first, and
 set explanation = TRUE, or hand over a set of explanations for your few shot
 examples. bacchuss returns everything after Explanation: as well.
